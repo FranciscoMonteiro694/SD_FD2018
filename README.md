@@ -1,2 +1,3 @@
 # SD_FD2018
-Francisco e Duarte
+Projeto de sistemas distribuido 2018
+Francisco Monteiro e Duarte Guerreiro
