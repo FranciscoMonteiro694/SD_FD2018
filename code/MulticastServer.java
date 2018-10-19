@@ -3,21 +3,19 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.io.IOException;
 import java.lang.*;
+import java.util.Random;
 
 public class MulticastServer extends Thread {
     private static int server_id;
     private String MULTICAST_ADDRESS = "224.0.224.0";
-    private int PORT_REC = 4321; // Porto para receber
+    private int PORT_REC = 4321; // Porto para receber, posso ter o mesmo porto para enviar e receber
     private int PORT_ENV = 4322; // Porto para enviar
 
-    public static void main(String[] args) { //meter um nº de servidor
+    public static void main(String[] args) { //meter um id do servidor
         String teste = args[0];
         server_id = Integer.parseInt(teste);
         MulticastServer server = new MulticastServer();
         server.start();
-        
-        System.out.println("Servidor com nº : "+ server_id);
-
     }
 
     public MulticastServer() {
@@ -39,6 +37,9 @@ public class MulticastServer extends Thread {
                 System.out.println("Received packet from " + packet.getAddress().getHostAddress() + ":" + packet.getPort() + " with message:");
                 String message = new String(packet.getData(), 0, packet.getLength());
                 System.out.println(message);
+                //se o id do server for igual ao id do server que vem no pacote, criar nova thread e responder ao pedido
+
+                //se não for, não faz nada
             }
 
         } catch (IOException e) {
@@ -46,6 +47,14 @@ public class MulticastServer extends Thread {
         } finally {
             socket.close();
         }
+    }
+}
+//Vou ter de pegar no pacote que receber, vou ao protocolo e vou buscar o id do servidor que vai responder
+class Worker extends Thread{
+
+
+    Worker(){
+
     }
 }
 

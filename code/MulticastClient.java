@@ -3,6 +3,7 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.io.IOException;
 import java.util.Scanner;
+import java.util.Random;
 
 /**
  * The MulticastClient class joins a multicast group and loops receiving
@@ -80,3 +81,8 @@ class MulticastUser extends Thread {
         }
     }
 }
+/* Para criar numeros random entre 1 e 2 */
+/*  Random rand = new Random();
+    int  n = rand.nextInt(2) + 1;
+    System.out.println("Número random : "+n);
+ */
