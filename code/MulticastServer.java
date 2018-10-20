@@ -33,7 +33,7 @@ public class MulticastServer extends Thread implements Serializable {
         MulticastSocket socket = null;
         System.out.println(this.getName());
         HashMap<String,String> map;
-        int i=0;
+
         try {
             socket = new MulticastSocket(PORT_REC);
             InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
@@ -46,21 +46,20 @@ public class MulticastServer extends Thread implements Serializable {
                 String message = new String(packet.getData(), 0, packet.getLength());
                 System.out.println(message);
                 //se o id do server for igual ao id do server que vem no pacote, criar nova thread e responder ao pedido
-                ++i;
-                System.out.println("Entrei aqui : "+i);
-
                 map=String_To_Hash(message);
                 int id;
-                id=Integer.parseInt(map.get("mserverid"));
-                if (id==server_id){
-                    Worker thread = new Worker(map,socket,users);
-                    thread.start();
-                }
-                //se não for, não faz nada
-                else{
-                    System.out.println("Não foi criada nenhuma thread");
-                }
+                if(map.containsKey("mserverid")) {
+                    id = Integer.parseInt(map.get("mserverid"));
+                    if (id == server_id) {
+                        Worker thread = new Worker(map, socket, users);
+                        thread.start();
+                    }
 
+                //se não for, não faz nada
+                    else{//Tenho de fazer alguma cena na base de dados? se for register tenho que
+                        System.out.println("Não foi criada nenhuma thread");
+                     }
+                }
             }
 
         } catch (IOException e) {
@@ -78,7 +77,7 @@ public class MulticastServer extends Thread implements Serializable {
         String[] parts2;
         for (int i = 0; i < parts.length; i++) {
             parts2 = parts[i].split("\\|");
-            r.put(parts2[0], parts2[1]);
+            r.put(parts2[0], parts2[1]); //esta a dar erro aqui
         }
         return r;
 
@@ -108,8 +107,8 @@ class Worker extends Thread{
     private String MULTICAST_ADDRESS = "224.0.224.0";
     private int PORT = 4321;
     private ArrayList<User> users;
-    HashMap<String,String> mensagem;
-    MulticastSocket socket;
+    private HashMap<String,String> mensagem;
+    private MulticastSocket socket;
 
     Worker(HashMap<String,String> mensagem,MulticastSocket socket,ArrayList<User> users){//recebe a mensagem como pedido
         this.mensagem=mensagem;
@@ -139,15 +138,13 @@ class Worker extends Thread{
                 if(logins_bd[0].equals(mensagem.get("username")) && logins_bd[1].equals(mensagem.get("password"))){
                     try {
                         InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                        String mensagem = "Login feito com sucesso!";
+                        String mensagem = "login_try|sucess";
                         byte[] buffer = mensagem.getBytes();
                         DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
                         socket.send(packet);
                     }
                     catch(IOException e){//será que depois devo fechar a socket?
                         e.printStackTrace();
-                    }finally {
-                        socket.close();
                     }
                 }
                 //Caso contrário, enviar mensagem a dizer que está incorrecto
@@ -155,7 +152,7 @@ class Worker extends Thread{
                     //Mandar mensagem "Login incorrecto!"
                     try {
                         InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                        String mensagem = "Login incorrecto!";
+                        String mensagem = "login_try|failed";
                         byte[] buffer = mensagem.getBytes();
                         DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
                         socket.send(packet);
@@ -165,7 +162,51 @@ class Worker extends Thread{
                     }
                 }
                 break;
+            case "register"://para registar, tambem vai ter de ser feito nos outros servidores
+                //verificar se o nome já está na base de dados
+                //se estiver
+                for(User u: users){
+                    if(u.getUsername().equals(mensagem.get("username"))){//se existir, enviar mensagem a dizer que falhou
+                        try {
+                            InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+                            String mensagem = "regist_try|failed";
+                            byte[] buffer = mensagem.getBytes();
+                            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+                            socket.send(packet);
+                        }
+                        catch(IOException e){
+                            e.printStackTrace();
+                        }
+                    }
+                    else{//se for bem sucedido, registar e adicionar à base de dados
+                        register(mensagem.get("username"),mensagem.get("password"));
+                        try {
+                            InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+                            String mensagem = "regist_try|sucess";
+                            byte[] buffer = mensagem.getBytes();
+                            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+                            socket.send(packet);
+                        }
+                        catch(IOException e){
+                            e.printStackTrace();
+                        }
+                    }
+
+                }
+
         }
+    }
+
+    void register(String username,String password){
+        User novo;
+        if (users.size()==0){
+            novo = new User(username,password,"admin");
+        }
+        else {
+            novo = new User(username, password,"normal");
+        }
+        //adiciona ao array list de utilizadores
+        users.add(novo);
     }
 }
 

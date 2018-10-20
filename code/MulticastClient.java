@@ -46,9 +46,7 @@ public class MulticastClient extends Thread {
             }
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            socket.close();
-        }
+        }//fechar a socket?
     }
 }
 
@@ -61,6 +59,7 @@ class MulticastUser extends Thread {
     }
 
     public void run() {//envia
+        int i=0;
         MulticastSocket socket = null;
         System.out.println(this.getName() + " ready...");
         try {
@@ -75,8 +74,6 @@ class MulticastUser extends Thread {
             //}
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            socket.close();
         }
     }
 }
