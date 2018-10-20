@@ -66,7 +66,7 @@ class MulticastUser extends Thread {
         try {
             socket = new MulticastSocket();  // create socket without binding it (only for sending)
             //while (true) {
-                String mensagem="type|teste;mserverid|1";
+                String mensagem="type|login;mserverid|1;username|testelogin;password|testepassword";
                 byte[] buffer = mensagem.getBytes();
 
                 InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);

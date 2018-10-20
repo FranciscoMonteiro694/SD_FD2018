@@ -1,12 +1,23 @@
 public class User {
-    private String login;
+    private String username;
     private String password;
     private String usertype;
 
-    User(String login, String password, String usertype){
-        this.login=login;
+    User(String username, String password, String usertype){
+        this.username=username;
         this.password=password;
         this.usertype=usertype;
     }
 
+    public String getUsername() {
+        return username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public String getUsertype() {
+        return usertype;
+    }
 }
