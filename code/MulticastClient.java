@@ -29,7 +29,7 @@ public class MulticastClient extends Thread {
         user.start();
     }
 
-    public void run() {
+    public void run() {//recebe
         MulticastSocket socket = null;
         try {
             socket = new MulticastSocket(PORT);  // create socket and bind it
@@ -60,20 +60,19 @@ class MulticastUser extends Thread {
         super("User " + (long) (Math.random() * 1000));
     }
 
-    public void run() {
+    public void run() {//envia
         MulticastSocket socket = null;
         System.out.println(this.getName() + " ready...");
         try {
             socket = new MulticastSocket();  // create socket without binding it (only for sending)
-            Scanner keyboardScanner = new Scanner(System.in);
-            while (true) {
-                String readKeyboard = keyboardScanner.nextLine();
-                byte[] buffer = readKeyboard.getBytes();
+            //while (true) {
+                String mensagem="type|teste;mserverid|1";
+                byte[] buffer = mensagem.getBytes();
 
                 InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
                 socket.send(packet);
-            }
+            //}
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
@@ -81,8 +80,4 @@ class MulticastUser extends Thread {
         }
     }
 }
-/* Para criar numeros random entre 1 e 2 */
-/*  Random rand = new Random();
-    int  n = rand.nextInt(2) + 1;
-    System.out.println("Número random : "+n);
- */
+
