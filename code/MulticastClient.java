@@ -3,6 +3,7 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.io.IOException;
 import java.util.Scanner;
+import java.util.Random;
 
 /**
  * The MulticastClient class joins a multicast group and loops receiving
@@ -28,7 +29,7 @@ public class MulticastClient extends Thread {
         user.start();
     }
 
-    public void run() {
+    public void run() {//recebe
         MulticastSocket socket = null;
         try {
             socket = new MulticastSocket(PORT);  // create socket and bind it
@@ -45,9 +46,7 @@ public class MulticastClient extends Thread {
             }
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            socket.close();
-        }
+        }//fechar a socket?
     }
 }
 
@@ -59,24 +58,23 @@ class MulticastUser extends Thread {
         super("User " + (long) (Math.random() * 1000));
     }
 
-    public void run() {
+    public void run() {//envia
+        int i=0;
         MulticastSocket socket = null;
         System.out.println(this.getName() + " ready...");
         try {
             socket = new MulticastSocket();  // create socket without binding it (only for sending)
-            Scanner keyboardScanner = new Scanner(System.in);
-            while (true) {
-                String readKeyboard = keyboardScanner.nextLine();
-                byte[] buffer = readKeyboard.getBytes();
+            //while (true) {
+                String mensagem="type|login;mserverid|1;username|testelogin;password|testepassword";
+                byte[] buffer = mensagem.getBytes();
 
                 InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
                 socket.send(packet);
-            }
+            //}
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            socket.close();
         }
     }
 }
+
