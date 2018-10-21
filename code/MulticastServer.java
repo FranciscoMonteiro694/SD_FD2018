@@ -19,7 +19,6 @@ public class MulticastServer extends Thread implements Serializable {
     private ArrayList<User> users;
     private String MULTICAST_ADDRESS = "224.0.224.0";
     private int PORT_REC = 4321; // Porto para receber, posso ter o mesmo porto para enviar e receber
-    private int PORT_ENV = 4322; // Porto para enviar
 
 
     public static void main(String[] args) { //meter um id do servidor
@@ -114,6 +113,7 @@ class Worker extends Thread{
     private ArrayList<Musica> musicas;//Lista de musicas
     private ArrayList<Artista> artistas;//Lista de artistas, (um artista pode ser um grupo)
     private ArrayList<Album> albuns;//Lista de albuns
+    private ArrayList<Notificacao> notificacoes;//Lista de notificacoes
 
     private HashMap<String,String> mensagem;
 
@@ -213,12 +213,51 @@ class Worker extends Thread{
             case "make_editor"://verificar se o utilizador em causa é o admin ou editor
                 make_editor();
                 break;
+            case "view_notificacoes":
+                ver_notificacoes();
+                break;
 
 
         }
     }
+    //Quando um cliente dá login, vai enviar uma mensagem para o servidor para ele ver se tem notificacoes
+    public void ver_notificacoes(){
+        //Procurar em todas as notificacoes se há alguma com o nome do username em causa
+        for(Notificacao n:notificacoes){
+            if (n.getDestinario().equals(mensagem.get("username"))){//se tiver notificacoes para este utilizador
+                try {
+                    InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+                    String aux=mensagem.get("username")+";notification|"+n.getNota();
+                    String mensagem = "username|"+aux;
+                    byte[] buffer = mensagem.getBytes();
+                    DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+                    socket.send(packet);
+                    //Remover a notifcacao da array List para não voltar a repetir posteriormente
+                    notificacoes.remove(n);
+                }
+                catch(IOException e){
+                    e.printStackTrace();
+                }
+            }
+            else{//Se não tiver notificações
+                try {
+                    InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+                    String aux=mensagem.get("username")+";notification|Não tem notificações"+n.getNota();
+                    String mensagem = "username|"+aux;
+                    byte[] buffer = mensagem.getBytes();
+                    DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+                    socket.send(packet);
+                }
+                catch(IOException e){
+                    e.printStackTrace();
+                }
+            }
+        }
+
+    }
+
     //Metodo que vai dar permissoes a outros utilizadores
-    void make_editor(){
+    public void make_editor(){
         //Vai verificar se o user em questao tem permissao de admin ou utilizador
         //Nao tem permissao, enviar mensagem
         if(mensagem.get("user_type").equals("normal")){
@@ -235,12 +274,53 @@ class Worker extends Thread{
         }
         if(mensagem.get("user_type").equals("admin") || mensagem.get("user_type").equals("editor")){
             //Ver a que utilizador quer dar permissoes
+            for(User u:users){
+                if(u.getUsername().equals(mensagem.get("editor_name"))){//se encontrou o nome
+                    if(u.getUsertype().equals("editor") || u.getUsertype().equals("admin")){//se já tem permissoes
+                        try {
+                            InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+                            String mensagem = "msg|O utilizador já tem permissões!";
+                            byte[] buffer = mensagem.getBytes();
+                            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+                            socket.send(packet);
+                        }
+                        catch(IOException e){
+                            e.printStackTrace();
+                        }
+                    }
+                    else{//se ainda não tem permissões
+                        try {
+                            u.setUsertype("editor");//altera as permissoes
+                            InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+                            String mensagem = "msg|Permissoes atualizadas!";//Falta por o utilizador em causa
+                            byte[] buffer = mensagem.getBytes();
+                            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+                            socket.send(packet);
+                        }
+                        catch(IOException e){
+                            e.printStackTrace();
+                        }
+                    }
+                }
+                else{//se não encontrou o nome
+                    try {
+                        InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+                        String mensagem = "msg|O utilizador não existe!";
+                        byte[] buffer = mensagem.getBytes();
+                        DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+                        socket.send(packet);
+                    }
+                    catch(IOException e){
+                        e.printStackTrace();
+                    }
+                }
+            }
         }
     }
 
     //Função que vai enviar por mensagem a lista de todos os albuns
     //Falta testar
-    void criticar_album(){
+    public void criticar_album(){
         int tamanho=albuns.size();
         //Se não houver album nenhum
         if(tamanho==0){
@@ -338,6 +418,26 @@ class Worker extends Thread{
             }
         }
     }
+    void leObjetosNotificacoes(){
+        ObjectInputStream ois=null;
+        try{
+            File f = new File("notificacoes.obj");
+            FileInputStream fis = new FileInputStream(f);
+            ois = new ObjectInputStream(fis);
+        }catch(IOException e) {
+            System.out.println(" ");
+        }
+        if(ois!=null){
+            try {
+                notificacoes = (ArrayList<Notificacao>) ois.readObject();
+                ois.close();
+            }catch(ClassNotFoundException e){
+                System.out.println(e);
+            }catch(IOException e) {
+                System.out.println(e);
+            }
+        }
+    }
     public void guardarArtistas(ArrayList<Artista> a){
         try{
             ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream("artistas.obj"));
@@ -345,6 +445,15 @@ class Worker extends Thread{
             os.close();
         }catch(IOException e){
             System.out.printf("Ocorreu a exceçao %s ao escrever no ficheiro de objetos dos artistas.\n", e);
+        }
+    }
+    public void guardarNotificacoes(ArrayList<Notificacao> n){
+        try{
+            ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream("notificacoes.obj"));
+            os.writeObject(n);
+            os.close();
+        }catch(IOException e){
+            System.out.printf("Ocorreu a exceçao %s ao escrever no ficheiro de objetos das notificacoes.\n", e);
         }
     }
     public void guardarMusicas(ArrayList<Musica> m){

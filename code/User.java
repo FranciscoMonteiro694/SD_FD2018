@@ -12,6 +12,18 @@ public class User implements Serializable {
         this.usertype=usertype;
     }
 
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public void setUsertype(String usertype) {
+        this.usertype = usertype;
+    }
+
     public String getUsername() {
         return username;
     }
