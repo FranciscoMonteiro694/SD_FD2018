@@ -54,14 +54,12 @@ public class MulticastServer extends Thread implements Serializable {
                 if(map.containsKey("mserverid")) {
                     id = Integer.parseInt(map.get("mserverid"));
                     if (id == server_id) {
-                        Worker thread = new Worker(map, socket, users);
+                        Worker thread = new Worker(map, socket, users,server_id);
                         thread.start();
                     }
+                    else{//tratar das cenas de registers e assim, talvez fazer um switch aqui dentro
 
-                //se não for, não faz nada
-                    else{//Tenho de fazer alguma cena na base de dados? se for register tenho que
-                        System.out.println("Não foi criada nenhuma thread");
-                     }
+                    }
                 }
             }
 
@@ -85,28 +83,11 @@ public class MulticastServer extends Thread implements Serializable {
         return r;
 
     }
-    /* Funcao que vai carregar os utilizadores de um ficheiro de texto e carregar para um arrayList*/
-    public void lerFicheirosTextoUtilizadores(){
 
-        try{
-            BufferedReader br = new BufferedReader(new FileReader(new File("utilizadores.txt")));
-            System.out.println("Ficheiro de utilizadores lido com sucesso!");
-            String s;
-            String [] as;
-            while((s = br.readLine())!=null){
-                //System.out.println(s);
-                as = s.split("/");
-                User u = new User(as[0],as[1],as[2]);
-                users.add(u);
-            }
-            br.close();
-        }catch (IOException e){
-            System.out.println("Ocorreu a exceção "+e);
-        }
-    }
 }
 //Vou ter de pegar no pacote que receber, vou ao protocolo e vou buscar o id do servidor que vai responder
 class Worker extends Thread{
+    private int server_id;
     private String MULTICAST_ADDRESS = "224.0.224.0";
     private int PORT = 4321;
     private ArrayList<User> users;//Lista de utilizadores
@@ -119,10 +100,11 @@ class Worker extends Thread{
 
     private MulticastSocket socket;
 
-    Worker(HashMap<String,String> mensagem,MulticastSocket socket,ArrayList<User> users){//recebe a mensagem como pedido
+    Worker(HashMap<String,String> mensagem,MulticastSocket socket,ArrayList<User> users,int server_id){//recebe a mensagem como pedido
         this.mensagem=mensagem;
         this.socket=socket;
         this.users=users;
+        this.server_id=server_id;
     }
 
     public void run(){
@@ -132,17 +114,15 @@ class Worker extends Thread{
             case "login"://para dar login
                 String[] logins_bd=new String[2];//para guardar os logins em causa da base de dados e comparar com os da mensagem
                 //Vou pegar no username e na password da mensagem e vou ver se está na base de dados
-                /*
                 for(User u : users){
                     if(u.getUsername().equals(mensagem.get("username"))){
                         logins_bd[0]=u.getUsername();
                         logins_bd[1]=u.getPassword();
                     }
                 }
-                */
                 /* Para teste */
-                logins_bd[0]="testelogin";
-                logins_bd[1]="testepassword";
+                //logins_bd[0]="testelogin";
+                //logins_bd[1]="testepassword";
                 //Se estiver, responder com uma mensagem a dizer que foi logado com sucesso
                 if(logins_bd[0].equals(mensagem.get("username")) && logins_bd[1].equals(mensagem.get("password"))){
                     try {
@@ -152,7 +132,7 @@ class Worker extends Thread{
                         DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
                         socket.send(packet);
                     }
-                    catch(IOException e){//será que depois devo fechar a socket?
+                    catch(IOException e){
                         e.printStackTrace();
                     }
                 }
@@ -376,12 +356,14 @@ class Worker extends Thread{
         //adiciona ao array list de utilizadores
         users.add(novo);
     }
-    //Funcao para carregar os ficheiros de objetos com os artistas
-    //Falta testar
+    /* Funções para lidar com ficheiros */
+    /* Falta testar */
+
     void leObjetosArtistas(){
         ObjectInputStream ois=null;
         try{
-            File f = new File("artistas.obj");
+            String filename="artistas"+Integer.toString(server_id)+".obj";
+            File f = new File(filename);
             FileInputStream fis = new FileInputStream(f);
             ois = new ObjectInputStream(fis);
         }catch(IOException e) {
@@ -401,7 +383,8 @@ class Worker extends Thread{
     void leObjetosMusicas(){
         ObjectInputStream ois=null;
         try{
-            File f = new File("musicas.obj");
+            String filename="musicas"+Integer.toString(server_id)+".obj";
+            File f = new File(filename);
             FileInputStream fis = new FileInputStream(f);
             ois = new ObjectInputStream(fis);
         }catch(IOException e) {
@@ -421,7 +404,8 @@ class Worker extends Thread{
     void leObjetosNotificacoes(){
         ObjectInputStream ois=null;
         try{
-            File f = new File("notificacoes.obj");
+            String filename="notificacoes"+Integer.toString(server_id)+".obj";
+            File f = new File(filename);
             FileInputStream fis = new FileInputStream(f);
             ois = new ObjectInputStream(fis);
         }catch(IOException e) {
@@ -438,9 +422,41 @@ class Worker extends Thread{
             }
         }
     }
+    void leObjetosUtilizadores(){
+        ObjectInputStream ois=null;
+        try{
+            String filename="utilizadores"+Integer.toString(server_id)+".obj";
+            File f = new File(filename);
+            FileInputStream fis = new FileInputStream(f);
+            ois = new ObjectInputStream(fis);
+        }catch(IOException e) {
+            System.out.println(" ");
+        }
+        if(ois!=null){
+            try {
+                users = (ArrayList<User>) ois.readObject();
+                ois.close();
+            }catch(ClassNotFoundException e){
+                System.out.println(e);
+            }catch(IOException e) {
+                System.out.println(e);
+            }
+        }
+    }
+    public void guardarUtilizadores(ArrayList<User> u){
+        try{
+            String filename="utilizadores"+Integer.toString(server_id)+".obj";
+            ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(filename));
+            os.writeObject(u);
+            os.close();
+        }catch(IOException e){
+            System.out.printf("Ocorreu a exceçao %s ao escrever no ficheiro de objetos dos utilizadores.\n", e);
+        }
+    }
     public void guardarArtistas(ArrayList<Artista> a){
         try{
-            ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream("artistas.obj"));
+            String filename="artistas"+Integer.toString(server_id)+".obj";
+            ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(filename));
             os.writeObject(a);
             os.close();
         }catch(IOException e){
@@ -449,7 +465,8 @@ class Worker extends Thread{
     }
     public void guardarNotificacoes(ArrayList<Notificacao> n){
         try{
-            ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream("notificacoes.obj"));
+            String filename="notificacoes"+Integer.toString(server_id)+".obj";
+            ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(filename));
             os.writeObject(n);
             os.close();
         }catch(IOException e){
@@ -458,7 +475,8 @@ class Worker extends Thread{
     }
     public void guardarMusicas(ArrayList<Musica> m){
         try{
-            ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream("musicas.obj"));
+            String filename="musicas"+Integer.toString(server_id)+".obj";
+            ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(filename));
             os.writeObject(m);
             os.close();
         }catch(IOException e){
