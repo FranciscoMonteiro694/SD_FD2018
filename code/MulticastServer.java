@@ -9,6 +9,10 @@ import java.util.ArrayList;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.File;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 
 public class MulticastServer extends Thread implements Serializable {
     private static int server_id;
@@ -106,8 +110,13 @@ public class MulticastServer extends Thread implements Serializable {
 class Worker extends Thread{
     private String MULTICAST_ADDRESS = "224.0.224.0";
     private int PORT = 4321;
-    private ArrayList<User> users;
+    private ArrayList<User> users;//Lista de utilizadores
+    private ArrayList<Musica> musicas;//Lista de musicas
+    private ArrayList<Artista> artistas;//Lista de artistas, (um artista pode ser um grupo)
+    private ArrayList<Album> albuns;//Lista de albuns
+
     private HashMap<String,String> mensagem;
+
     private MulticastSocket socket;
 
     Worker(HashMap<String,String> mensagem,MulticastSocket socket,ArrayList<User> users){//recebe a mensagem como pedido
@@ -193,10 +202,89 @@ class Worker extends Thread{
                     }
 
                 }
+                break;
+            case "write_review"://para escrever criticas
+                //vai ter de enviar a lista de todos os albuns para o utilizador escolher qual quer
+                criticar_album();
+                break;
+            case "write_review2":
+                criticar_album2();
+                break;
+            case "make_editor"://verificar se o utilizador em causa é o admin ou editor
+                make_editor();
+                break;
+
 
         }
     }
+    //Metodo que vai dar permissoes a outros utilizadores
+    void make_editor(){
+        //Vai verificar se o user em questao tem permissao de admin ou utilizador
+        //Nao tem permissao, enviar mensagem
+        if(mensagem.get("user_type").equals("normal")){
+            try {
+                InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+                String mensagem = "acess|denied";
+                byte[] buffer = mensagem.getBytes();
+                DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+                socket.send(packet);
+            }
+            catch(IOException e){
+                e.printStackTrace();
+            }
+        }
+        if(mensagem.get("user_type").equals("admin") || mensagem.get("user_type").equals("editor")){
+            //Ver a que utilizador quer dar permissoes
+        }
+    }
 
+    //Função que vai enviar por mensagem a lista de todos os albuns
+    //Falta testar
+    void criticar_album(){
+        int tamanho=albuns.size();
+        //Se não houver album nenhum
+        if(tamanho==0){
+            //Enviar mensagem a dizer que não há albuns
+        }
+        else {
+            String mensagem = "type|album_list;item_count|" + Integer.toString(tamanho) + ";";
+            for (int i = 0; i < albuns.size(); i++) {
+                mensagem = mensagem + "item_" + Integer.toString(i) + "_name|" + albuns.get(i).getNome() + ";";
+            }
+            try {
+                InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+                byte[] buffer = mensagem.getBytes();
+                DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+                socket.send(packet);
+            }
+            catch(IOException e){
+                e.printStackTrace();
+            }
+        }
+    }
+    void criticar_album2(){
+        //Vai receber o album que o utilizador quer criticar, a sua mensagem e a cotacao
+        ArrayList<Critica> criticas;
+        for(Album a: albuns){
+            if(a.getNome().equals(mensagem.get("item_0_name"))){//Quando encontra o album na lista de albuns
+                Critica c = new Critica (mensagem.get("review_txt"),Integer.parseInt(mensagem.get("review_avaliacao")));
+                criticas=a.getCriticas();
+                criticas.add(c);
+                a.setCriticas(criticas);
+            }
+        }
+        try {
+            String mensagem="type|warning;msg|Critica escrita com sucesso!";
+            InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+            byte[] buffer = mensagem.getBytes();
+            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+            socket.send(packet);
+        }
+        catch(IOException e){
+            e.printStackTrace();
+        }
+    }
+    //Funcao para registar pessoa
     void register(String username,String password){
         User novo;
         if (users.size()==0){
@@ -207,6 +295,66 @@ class Worker extends Thread{
         }
         //adiciona ao array list de utilizadores
         users.add(novo);
+    }
+    //Funcao para carregar os ficheiros de objetos com os artistas
+    //Falta testar
+    void leObjetosArtistas(){
+        ObjectInputStream ois=null;
+        try{
+            File f = new File("artistas.obj");
+            FileInputStream fis = new FileInputStream(f);
+            ois = new ObjectInputStream(fis);
+        }catch(IOException e) {
+            System.out.println(" ");
+        }
+        if(ois!=null){
+            try {
+                artistas = (ArrayList<Artista>) ois.readObject();
+                ois.close();
+            }catch(ClassNotFoundException e){
+                System.out.println(e);
+            }catch(IOException e) {
+                System.out.println(e);
+            }
+        }
+    }
+    void leObjetosMusicas(){
+        ObjectInputStream ois=null;
+        try{
+            File f = new File("musicas.obj");
+            FileInputStream fis = new FileInputStream(f);
+            ois = new ObjectInputStream(fis);
+        }catch(IOException e) {
+            System.out.println(" ");
+        }
+        if(ois!=null){
+            try {
+                musicas = (ArrayList<Musica>) ois.readObject();
+                ois.close();
+            }catch(ClassNotFoundException e){
+                System.out.println(e);
+            }catch(IOException e) {
+                System.out.println(e);
+            }
+        }
+    }
+    public void guardarArtistas(ArrayList<Artista> a){
+        try{
+            ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream("artistas.obj"));
+            os.writeObject(a);
+            os.close();
+        }catch(IOException e){
+            System.out.printf("Ocorreu a exceçao %s ao escrever no ficheiro de objetos dos artistas.\n", e);
+        }
+    }
+    public void guardarMusicas(ArrayList<Musica> m){
+        try{
+            ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream("musicas.obj"));
+            os.writeObject(m);
+            os.close();
+        }catch(IOException e){
+            System.out.printf("Ocorreu a exceçao %s ao escrever no ficheiro de objetos dos musicas.\n", e);
+        }
     }
 }
 

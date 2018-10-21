@@ -1,4 +1,7 @@
-public class User {
+import java.io.Serializable;
+
+public class User implements Serializable {
+    //Faz sentido o utilizador ter um id proprio?
     private String username;
     private String password;
     private String usertype;

@@ -1,7 +1,8 @@
-public class Musica {
+import java.io.Serializable;
+
+public class Musica implements Serializable {
     private String nome;
-    private Musico autorm;
-    private Grupos autorg;
+    private Artista autor;
     private String compositor;
     private String duracao;
     private Data data_lancamento;

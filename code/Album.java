@@ -1,11 +1,20 @@
 import java.util.ArrayList;
 
 public class Album {
+    private String nome;
     private ArrayList<Musica> musicas;
     private Data data_lancamento;
     private ArrayList<Critica> criticas;
 
-    Album(Data data_lancamento,ArrayList<Critica> criticas){
+    public String getNome() {
+        return nome;
+    }
+
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
+
+    Album(Data data_lancamento, ArrayList<Critica> criticas){
         this.data_lancamento=data_lancamento;
         this.criticas=criticas;
     }
