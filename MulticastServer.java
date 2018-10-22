@@ -331,6 +331,17 @@ class Worker extends Thread{
         //Se não houver album nenhum
         if(tamanho==0){
             //Enviar mensagem a dizer que não há albuns
+            try {
+                InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+                String mensagem = "type|warning;msg|Não há albuns disponveis!!";
+                byte[] buffer = mensagem.getBytes();
+                DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+                socket.send(packet);
+            }
+            catch(IOException e){
+                e.printStackTrace();
+            }
+
         }
         else {
             String mensagem = "type|album_list;item_count|" + Integer.toString(tamanho) + ";";
