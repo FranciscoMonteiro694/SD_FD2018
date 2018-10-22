@@ -169,7 +169,8 @@ class Worker extends Thread{
                     register_admin(mensagem.get("username"),mensagem.get("password"));
                     try {
                         InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                        String mensagem = "regist_try|sucess;msg|Foi registado como admin!;";
+                        aux="ID|"+mensagem.get("ID")+";Request|False";
+                        String mensagem = "regist_try|sucess;msg|Foi registado como admin!"+aux;
                         byte[] buffer = mensagem.getBytes();
                         DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
                         socket.send(packet);
