@@ -121,6 +121,7 @@ class Worker extends Thread{
     }
 
     public void run(){
+        String aux;
         System.out.println("Thread para tratar do pedido criada!");
         //Tratar da resposta
         switch(mensagem.get("type")){//é preciso dar handle do quit?
@@ -133,9 +134,6 @@ class Worker extends Thread{
                         logins_bd[1]=u.getPassword();
                     }
                 }
-                /* Para teste */
-                //logins_bd[0]="testelogin";
-                //logins_bd[1]="testepassword";
                 //Se estiver, responder com uma mensagem a dizer que foi logado com sucesso
                 if(logins_bd[0].equals(mensagem.get("username")) && logins_bd[1].equals(mensagem.get("password"))){
                     try {
@@ -168,10 +166,10 @@ class Worker extends Thread{
                 //verificar se o nome já está na base de dados
                 //se estiver
                 if(users.isEmpty()==true){
-                    register(mensagem.get("username"),mensagem.get("password"));
+                    register_admin(mensagem.get("username"),mensagem.get("password"));
                     try {
                         InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                        String mensagem = "regist_try|sucess";
+                        String mensagem = "regist_try|sucess;msg|Foi registado como admin!;";
                         byte[] buffer = mensagem.getBytes();
                         DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
                         socket.send(packet);
@@ -226,13 +224,14 @@ class Worker extends Thread{
     }
     //Quando um cliente dá login, vai enviar uma mensagem para o servidor para ele ver se tem notificacoes
     public void ver_notificacoes(){
+        int counter=0;
         //Procurar em todas as notificacoes se há alguma com o nome do username em causa
         for(Notificacao n:notificacoes){
             if (n.getDestinario().equals(mensagem.get("username"))){//se tiver notificacoes para este utilizador
                 try {
                     InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                   
                     String aux=mensagem.get("username")+";notification|"+n.getNota();
+                    counter++;
                     String mensagem = "username|"+aux;
                     byte[] buffer = mensagem.getBytes();
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
@@ -244,31 +243,32 @@ class Worker extends Thread{
                     e.printStackTrace();
                 }
             }
-            else{//Se não tiver notificações
-                try {
-                    InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                    String aux=mensagem.get("username")+";notification|Não tem notificações"+n.getNota();
-                    String mensagem = "username|"+aux;
-                    byte[] buffer = mensagem.getBytes();
-                    DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
-                    socket.send(packet);
-                }
-                catch(IOException e){
-                    e.printStackTrace();
-                }
+        }
+        //Se não tiver notificações
+        if (counter==0){
+            try {
+                InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+                String aux=mensagem.get("username")+";msg|Nao tem notificacoes!";
+                String mensagem = "username|"+aux;
+                byte[] buffer = mensagem.getBytes();
+                DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+                socket.send(packet);
+            }
+            catch(IOException e){
+                e.printStackTrace();
             }
         }
-
     }
 
     //Metodo que vai dar permissoes a outros utilizadores
     public void make_editor(){
+        String aux;
         //Vai verificar se o user em questao tem permissao de admin ou utilizador
         //Nao tem permissao, enviar mensagem
         if(mensagem.get("user_type").equals("normal")){
             try {
                 InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                String mensagem = "acess|denied";
+                String mensagem = "acess|denied;msg|Nao tem permissoes";
                 byte[] buffer = mensagem.getBytes();
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
                 socket.send(packet);
@@ -296,8 +296,9 @@ class Worker extends Thread{
                     else{//se ainda não tem permissões
                         try {
                             u.setUsertype("editor");//altera as permissoes
+                            aux="editor_made|"+mensagem.get("username");
                             InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                            String mensagem = "msg|Permissoes atualizadas!";//Falta por o utilizador em causa
+                            String mensagem = "msg|Permissoes atualizadas!;"+aux;
                             byte[] buffer = mensagem.getBytes();
                             DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
                             socket.send(packet);
@@ -369,15 +370,16 @@ class Worker extends Thread{
             e.printStackTrace();
         }
     }
+    //Função para registar o admin, só vai ser utilizada uma vez
+    void register_admin(String username,String password){
+        User novo;
+        novo = new User(username,password,"admin");
+        users.add(novo);
+    }
     //Funcao para registar pessoa
     void register(String username,String password){
         User novo;
-        if (users.size()==0){
-            novo = new User(username,password,"admin");
-        }
-        else {
-            novo = new User(username, password,"normal");
-        }
+        novo = new User(username, password,"normal");
         //adiciona ao array list de utilizadores
         users.add(novo);
     }
