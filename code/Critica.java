@@ -1,6 +1,7 @@
 public class Critica {
     private String justificao;//ate 300 palavras
     private int avaliacao;//de 0 a 10
+    private String user;
 
     Critica(String justificao,int avaliacao){
         this.justificao=justificao;

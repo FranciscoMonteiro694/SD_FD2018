@@ -16,9 +16,13 @@ import java.io.FileOutputStream;
 
 public class MulticastServer extends Thread implements Serializable {
     private static int server_id;
-    private ArrayList<User> users;
     private String MULTICAST_ADDRESS = "224.0.224.0";
-    private int PORT_REC = 4321; // Porto para receber, posso ter o mesmo porto para enviar e receber
+    private int PORT_REC = 4321;
+    private ArrayList<User> users;//Lista de utilizadores
+    private ArrayList<Musica> musicas;//Lista de musicas
+    private ArrayList<Artista> artistas;//Lista de artistas, (um artista pode ser um grupo)
+    private ArrayList<Album> albuns;//Lista de albuns
+    private ArrayList<Notificacao> notificacoes;//Lista de notificacoes
 
 
     public static void main(String[] args) { //meter um id do servidor
@@ -33,6 +37,11 @@ public class MulticastServer extends Thread implements Serializable {
     }
 
     public void run() {
+        users=new ArrayList<>();
+        musicas=new ArrayList<>();
+        notificacoes=new ArrayList<>();
+        musicas=new ArrayList<>();
+        albuns=new ArrayList<>();
         MulticastSocket socket = null;
         System.out.println(this.getName());
         HashMap<String,String> map;
@@ -54,7 +63,7 @@ public class MulticastServer extends Thread implements Serializable {
                 if(map.containsKey("mserverid")) {
                     id = Integer.parseInt(map.get("mserverid"));
                     if (id == server_id) {
-                        Worker thread = new Worker(map, socket, users,server_id);
+                        Worker thread = new Worker(map, socket, users,server_id,musicas,artistas,albuns,notificacoes);
                         thread.start();
                     }
                     else{//tratar das cenas de registers e assim, talvez fazer um switch aqui dentro
@@ -100,10 +109,14 @@ class Worker extends Thread{
 
     private MulticastSocket socket;
 
-    Worker(HashMap<String,String> mensagem,MulticastSocket socket,ArrayList<User> users,int server_id){//recebe a mensagem como pedido
+    Worker(HashMap<String,String> mensagem,MulticastSocket socket,ArrayList<User> users,int server_id, ArrayList<Musica> musicas,ArrayList<Artista> artistas,ArrayList<Album> albuns,ArrayList<Notificacao> notificacoes){//recebe a mensagem como pedido
         this.mensagem=mensagem;
         this.socket=socket;
         this.users=users;
+        this.notificacoes=notificacoes;
+        this.albuns=albuns;
+        this.artistas=artistas;
+        this.musicas=musicas;
         this.server_id=server_id;
     }
 
@@ -154,33 +167,44 @@ class Worker extends Thread{
             case "register"://para registar, tambem vai ter de ser feito nos outros servidores
                 //verificar se o nome já está na base de dados
                 //se estiver
-                for(User u: users){
-                    if(u.getUsername().equals(mensagem.get("username"))){//se existir, enviar mensagem a dizer que falhou
-                        try {
-                            InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                            String mensagem = "regist_try|failed";
-                            byte[] buffer = mensagem.getBytes();
-                            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
-                            socket.send(packet);
-                        }
-                        catch(IOException e){
-                            e.printStackTrace();
-                        }
+                if(users.isEmpty()==true){
+                    register(mensagem.get("username"),mensagem.get("password"));
+                    try {
+                        InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+                        String mensagem = "regist_try|sucess";
+                        byte[] buffer = mensagem.getBytes();
+                        DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+                        socket.send(packet);
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
-                    else{//se for bem sucedido, registar e adicionar à base de dados
-                        register(mensagem.get("username"),mensagem.get("password"));
-                        try {
-                            InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                            String mensagem = "regist_try|sucess";
-                            byte[] buffer = mensagem.getBytes();
-                            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
-                            socket.send(packet);
+                }
+                else {
+                    for (User u : users) {//Está a dar null pointer exception
+                        if (u.getUsername().equals(mensagem.get("username"))) {//se existir, enviar mensagem a dizer que falhou
+                            try {
+                                InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+                                String mensagem = "regist_try|failed";
+                                byte[] buffer = mensagem.getBytes();
+                                DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+                                socket.send(packet);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        } else {//se for bem sucedido, registar e adicionar à base de dados
+                            register(mensagem.get("username"), mensagem.get("password"));
+                            try {
+                                InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+                                String mensagem = "regist_try|sucess";
+                                byte[] buffer = mensagem.getBytes();
+                                DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+                                socket.send(packet);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
                         }
-                        catch(IOException e){
-                            e.printStackTrace();
-                        }
-                    }
 
+                    }
                 }
                 break;
             case "write_review"://para escrever criticas
@@ -207,6 +231,7 @@ class Worker extends Thread{
             if (n.getDestinario().equals(mensagem.get("username"))){//se tiver notificacoes para este utilizador
                 try {
                     InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+                   
                     String aux=mensagem.get("username")+";notification|"+n.getNota();
                     String mensagem = "username|"+aux;
                     byte[] buffer = mensagem.getBytes();
