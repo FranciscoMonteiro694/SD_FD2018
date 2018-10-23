@@ -5,6 +5,8 @@ public class Album {
     private ArrayList<Musica> musicas;
     private Data data_lancamento;
     private ArrayList<Critica> criticas;
+    private double pontuacao_med;
+    private String descricao;
 
     public String getNome() {
         return nome;
