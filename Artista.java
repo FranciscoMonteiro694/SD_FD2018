@@ -38,6 +38,9 @@ public class Artista implements Serializable {
     public void setDescricao(String descricao) {
         this.descricao = descricao;
     }
+    Artista(String nome){
+        this.nome=nome;
+    }
 
     Artista(String nome, Data data_nasc, String descricao, String genero){
         this.nome=nome;
