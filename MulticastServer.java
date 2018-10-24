@@ -324,9 +324,31 @@ class Worker extends Thread {
             case "remover_album":
                 remover_album();
                 break;
+            case "pesquisar":
+                pesquisar();
+                break;
+
+
+        }
+    }
+    /* Função que vai enviar tudo o que tem a string recebida pelo RMI server */
+
+    public void pesquisar(){
+        String s1=mensagem.get("search_key");// String recebida pelo RMI server
+        str1.toLowerCase().contains(s1.toLowerCase());// Vai devolver um boolean
 
 
 
+
+        try {
+            InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+            String aux = mensagem.get("username") + "insere_artista_try|failed;"+"type|warning";
+            String mensagem = "username|" + aux;
+            byte[] buffer = mensagem.getBytes();
+            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+            socket.send(packet);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
     /* Funções que vão alturar alguns atributos dos artistas,musicas e albuns */
