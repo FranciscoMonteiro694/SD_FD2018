@@ -528,7 +528,8 @@ class Worker extends Thread {
             as = mensagem.get("album_data").split("/");
             d = new Data(Integer.parseInt(as[0]),Integer.parseInt(as[1]),Integer.parseInt(as[2]));
             Album novo;
-            novo = new Album(mensagem.get("album_name"),d,mensagem.get("album_autor"));
+            ArrayList <Musica> musicas_album = new ArrayList<>();
+            novo = new Album(mensagem.get("album_name"),d,mensagem.get("album_autor"),musicas_album);
             // Vou verificar se o Artista já existe
             // Se não existir o artista
             if(verifica_artista(mensagem.get("album_autor"))==false){
@@ -627,6 +628,13 @@ class Worker extends Thread {
                 //Vou adicionar o album
                 Album a = new Album(mensagem.get("musica_album"));
                 albuns.add(a);
+            }
+            //Procurar o album na lista de albuns e adicionar a musica
+            for(Album a : albuns){
+                if (a.getNome().equals(mensagem.get("musica_album"))){// Quando encontrar o album
+                    //Adicionar a musica ao album
+                    a.getMusicas().add(novo);
+                }
             }
             musicas.add(novo);
             try {
@@ -1111,4 +1119,3 @@ class Worker extends Thread {
         }
     }
 }
-
