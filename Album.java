@@ -45,10 +45,11 @@ public class Album {
         this.descricao = descricao;
     }
 
-    Album(String nome, Data data_lancamento, String autor){
+    Album(String nome, Data data_lancamento, String autor,ArrayList<Musica> musicas){
         this.data_lancamento=data_lancamento;
         this.nome=nome;
         this.autor=autor;
+        this.musicas=musicas;
     }
 
     public void setCriticas(ArrayList<Critica> criticas) {

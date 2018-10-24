@@ -6,6 +6,7 @@ public class Artista implements Serializable {
     private String genero;
     private Data data_nasc;
     private String descricao;
+    private ArrayList<Album> listaAlbuns;
 
     public String getNome() {
         return nome;
@@ -17,6 +18,14 @@ public class Artista implements Serializable {
 
     public String getGenero() {
         return genero;
+    }
+
+    public ArrayList<Album> getListaAlbuns() {
+        return listaAlbuns;
+    }
+
+    public void setListaAlbuns(ArrayList<Album> listaAlbuns) {
+        this.listaAlbuns = listaAlbuns;
     }
 
     public void setGenero(String genero) {
@@ -42,11 +51,12 @@ public class Artista implements Serializable {
         this.nome=nome;
     }
 
-    Artista(String nome, Data data_nasc, String descricao, String genero){
+    Artista(String nome, Data data_nasc, String descricao, String genero,ArrayList<Album> listaAlbuns){
         this.nome=nome;
         this.genero=genero;
         this.data_nasc=data_nasc;
         this.genero=genero;
+        this.listaAlbuns=listaAlbuns;
 
     }
 }
