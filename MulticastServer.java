@@ -26,7 +26,7 @@ public class MulticastServer extends Thread implements Serializable {
 
 
     public static void main(String[] args) { //meter um id do servidor
-        String teste = args[0];
+        String teste = "1";
         server_id = Integer.parseInt(teste);
         MulticastServer server = new MulticastServer();
         server.start();
@@ -38,7 +38,7 @@ public class MulticastServer extends Thread implements Serializable {
 
     public void run() {
         users = new ArrayList<>();
-        musicas = new ArrayList<>();
+        artistas = new ArrayList<>();
         notificacoes = new ArrayList<>();
         musicas = new ArrayList<>();
         albuns = new ArrayList<>();
@@ -511,7 +511,7 @@ class Worker extends Thread {
         if(verifica_album(mensagem.get("album_name"))==true){
             try {
                 InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                String aux = mensagem.get("username") + "insere_album_try|failed;"+"type|warning"+ ";ID|" + mensagem.get("ID");
+                String aux = mensagem.get("username") + ";insere_album_try|failed;"+"type|warning"+ ";ID|" + mensagem.get("ID");
                 String mensagem = "username|" + aux;
                 byte[] buffer = mensagem.getBytes();
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
@@ -539,7 +539,7 @@ class Worker extends Thread {
             albuns.add(novo);
             try {
                 InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                String aux = mensagem.get("username") + "insere_album_try|sucess;"+"type|warning"+ ";ID|" + mensagem.get("ID");
+                String aux = mensagem.get("username") + ";insere_album_try|sucess;"+"type|warning"+ ";ID|" + mensagem.get("ID");
                 String mensagem = "username|" + aux;
                 byte[] buffer = mensagem.getBytes();
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
@@ -558,7 +558,7 @@ class Worker extends Thread {
         if(verifica_artista(mensagem.get("artista_name"))==true){
             try {
                 InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                String aux = mensagem.get("username") + "insere_artista_try|failed;"+"type|warning"+ ";ID|" + mensagem.get("ID");
+                String aux = mensagem.get("username") + ";insere_artista_try|failed;"+"type|warning"+ ";ID|" + mensagem.get("ID");
                 String mensagem = "username|" + aux;
                 byte[] buffer = mensagem.getBytes();
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
@@ -580,7 +580,7 @@ class Worker extends Thread {
             artistas.add(novo);
             try {
                 InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                String aux = mensagem.get("username") + "insere_artista_try|sucess;"+"type|warning"+ ";ID|" + mensagem.get("ID");
+                String aux = mensagem.get("username") + ";insere_artista_try|sucess;"+"type|warning"+ ";ID|" + mensagem.get("ID");
                 String mensagem = "username|" + aux;
                 byte[] buffer = mensagem.getBytes();
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
@@ -598,7 +598,7 @@ class Worker extends Thread {
         if(verifica_musica(mensagem.get("musica_name"))==true){
             try {
                 InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                String aux = mensagem.get("username") + "insere_musica_try|failed;"+"type|warning"+ ";ID|" + mensagem.get("ID");
+                String aux = mensagem.get("username") + ";insere_musica_try|failed;"+"type|warning"+ ";ID|" + mensagem.get("ID");
                 String mensagem = "username|" + aux;
                 byte[] buffer = mensagem.getBytes();
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
@@ -631,7 +631,7 @@ class Worker extends Thread {
             musicas.add(novo);
             try {
                 InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                String aux = mensagem.get("username") + "insere_artista_try|sucess;"+"type|warning"+ ";ID|" + mensagem.get("ID");
+                String aux = mensagem.get("username") + ";insere_artista_try|sucess;"+"type|warning"+ ";ID|" + mensagem.get("ID");
                 String mensagem = "username|" + aux;
                 byte[] buffer = mensagem.getBytes();
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
@@ -650,7 +650,7 @@ class Worker extends Thread {
                     artistas.remove(a);
                     try {
                         InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                        String aux = mensagem.get("username") + "remove_artista_try|sucess;"+"type|warning"+ ";ID|" + mensagem.get("ID");
+                        String aux = mensagem.get("username") + ";remove_artista_try|sucess;"+"type|warning"+ ";ID|" + mensagem.get("ID");
                         String mensagem = "username|" + aux;
                         byte[] buffer = mensagem.getBytes();
                         DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
@@ -666,7 +666,7 @@ class Worker extends Thread {
         else{
             try {
                 InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                String aux = mensagem.get("username") + "remove_artista_try|failed;"+"type|warning"+ ";ID|" + mensagem.get("ID");
+                String aux = mensagem.get("username") + ";remove_artista_try|failed;"+"type|warning"+ ";ID|" + mensagem.get("ID");
                 String mensagem = "username|" + aux;
                 byte[] buffer = mensagem.getBytes();
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
@@ -685,7 +685,7 @@ class Worker extends Thread {
                     albuns.remove(a);
                     try {
                         InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                        String aux = mensagem.get("username") + "remove_album_try|sucess;"+"type|warning"+ ";ID|" + mensagem.get("ID");
+                        String aux = mensagem.get("username") + ";remove_album_try|sucess;"+"type|warning"+ ";ID|" + mensagem.get("ID");
                         String mensagem = "username|" + aux;
                         byte[] buffer = mensagem.getBytes();
                         DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
@@ -749,6 +749,9 @@ class Worker extends Thread {
     /* Função que verifica se o artista já se encontra na base de dados */
     // Recebe o nome do artista, envia true se existir na lista */
     public boolean verifica_artista(String nome_artista){
+        if(artistas.isEmpty()){
+            return false;
+        }
         for(Artista a : artistas){
             if(a.getNome().equals(nome_artista))
                 return true;
@@ -1108,5 +1111,4 @@ class Worker extends Thread {
         }
     }
 }
-
 
