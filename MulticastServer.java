@@ -538,6 +538,14 @@ class Worker extends Thread {
                 artistas.add(a);
             }
             albuns.add(novo);
+            // Adicionar o album à lista de albuns do artista
+            for(Artista a:artistas){
+                if (a.getNome().equals(mensagem.get("album_autor"))){// Quando encontrar o artista
+                    //Adicionar o album ao artista
+                    a.getListaAlbuns().add(novo);
+
+                }
+            }
             try {
                 InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
                 String aux = mensagem.get("username") + ";insere_album_try|sucess;"+"type|warning"+ ";ID|" + mensagem.get("ID");
@@ -576,7 +584,8 @@ class Worker extends Thread {
             as = mensagem.get("artista_data").split("/");
             d = new Data(Integer.parseInt(as[0]),Integer.parseInt(as[1]),Integer.parseInt(as[2]));
             Artista novo;
-            novo = new Artista(mensagem.get("artista_name"),d,mensagem.get("artista_descricao"),mensagem.get("artista_genero"));
+            ArrayList <Album> lista_albuns = new ArrayList<>();
+            novo = new Artista(mensagem.get("artista_name"),d,mensagem.get("artista_descricao"),mensagem.get("artista_genero"),lista_albuns);
             // Adicionar à lista
             artistas.add(novo);
             try {
@@ -639,7 +648,7 @@ class Worker extends Thread {
             musicas.add(novo);
             try {
                 InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                String aux = mensagem.get("username") + ";insere_artista_try|sucess;"+"type|warning"+ ";ID|" + mensagem.get("ID");
+                String aux = mensagem.get("username") + ";insere_musica_try|sucess;"+"type|warning"+ ";ID|" + mensagem.get("ID");
                 String mensagem = "username|" + aux;
                 byte[] buffer = mensagem.getBytes();
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
