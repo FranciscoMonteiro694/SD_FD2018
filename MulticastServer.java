@@ -669,7 +669,11 @@ class Worker extends Thread {
             // Se não existir o artista
             if(verifica_artista(mensagem.get("album_autor"))==false){
                 //Vou adicionar o artista
-                Artista a = new Artista(mensagem.get("album_autor"));
+                ArrayList <Album> lista_albuns = new ArrayList<>();
+                Artista a = new Artista(mensagem.get("album_autor"),lista_albuns);
+                //Criar a lista de albuns
+
+
                 artistas.add(a);
             }
             albuns.add(novo);

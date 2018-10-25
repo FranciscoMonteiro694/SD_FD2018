@@ -51,6 +51,11 @@ public class Artista implements Serializable {
         this.nome=nome;
     }
 
+    Artista(String nome,ArrayList<Album> listaAlbuns){
+        this.nome=nome;
+        this.listaAlbuns=listaAlbuns;
+    }
+
     Artista(String nome, Data data_nasc, String descricao, String genero,ArrayList<Album> listaAlbuns){
         this.nome=nome;
         this.genero=genero;
