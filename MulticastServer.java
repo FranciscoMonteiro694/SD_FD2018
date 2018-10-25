@@ -13,6 +13,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.util.Iterator;
 
 public class MulticastServer extends Thread implements Serializable {
     private static int server_id;
@@ -65,7 +66,7 @@ public class MulticastServer extends Thread implements Serializable {
                     if (id == server_id) {
                         Worker thread = new Worker(map, socket, users, server_id, musicas, artistas, albuns, notificacoes);
                         thread.start();
-                    } else {//tratar das cenas de registers e assim, talvez fazer um switch aqui dentro
+                    } else {//tratar das cenas de registers e assim, talvez fazer um switch aqui dentro, sem mandar mensagens
                         switch(map.get("type")){
                             case "register":
                                 //Guardar
@@ -333,8 +334,141 @@ class Worker extends Thread {
             case "pesquisar":
                 pesquisar();
                 break;
+            case "get_musica":
+                get_musica();
+                break;
+            case "get_album":
+                get_album();
+                break;
+            case "get_artista":
+                get_artista();
+                break;
 
+        }
+    }
+    public double calculo_pontuacao(ArrayList<Critica> criticas){
+        if (criticas.isEmpty())
+                return 0;
+        int acum=0;
+        for (Critica c : criticas){
+            acum+=c.getAvaliacao();
+        }
+        return acum/criticas.size();
 
+    }
+    // Vai receber o nome da música e vai devolver todos os atributos
+    public void get_musica(){
+        //Vou procurar a musica
+        String aux="";
+        for(Musica m : musicas){
+            if (m.getNome().equals(mensagem.get("musica_name"))){// Quando encontrar
+                aux = "username|"+mensagem.get("username")+";type|musica_info;musica_name|"+m.getNome()+";musica_autor|"+m.getAutor()+";musica_compositor|"+m.getCompositor()+";musica_data|"+m.getData_lancamento().getDia()+"/"+m.getData_lancamento().getMes()+"/"+m.getData_lancamento().getAno()+";musica_descricao|"+m.getDescricao()+";musica_album|"+m.getAlbum()+";ID|"+mensagem.get("ID");
+                break;
+            }
+        }
+        try {
+            InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+            byte[] buffer = aux.getBytes();
+            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+            socket.send(packet);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Vai receber o nome do album e devolve os seus atributos (criticas, musicas, etc)
+    public void get_album(){
+        //Vou procurar o album
+        String aux="";
+        String auxC="";
+        String auxM="";
+        int counter=0;
+        ArrayList<Critica> auxCriticas;
+        ArrayList<Musica> auxMusicas;
+        for(Album a : albuns){
+            if (a.getNome().equals(mensagem.get("album_name"))){// Quando encontrar
+                aux="username|"+mensagem.get("username")+";type|album_info;album_name|"+a.getNome()+";";
+                if(a.getData_lancamento()!=null){
+                    aux+="album_data|"+a.getData_lancamento().getDia()+"/"+a.getData_lancamento().getMes()+"/"+a.getData_lancamento().getAno()+";";
+                }
+                if(a.getDescricao()!=null){
+                    aux+="album_descricao|"+a.getDescricao()+";";
+                }
+                if(a.getAutor()!=null){
+                    aux+="album_autor|"+a.getAutor()+";";
+                }
+                if(a.getCriticas()!=null){
+                    auxCriticas=a.getCriticas();
+                    auxC="criticas_count|"+Integer.toString(auxCriticas.size())+";";
+                    for(Critica c : auxCriticas){
+                        auxC+="critica_"+Integer.toString(counter)+"_string|"+c.getJustificao()+";critica_"+Integer.toString(counter)+"_nota|"+Integer.toString(c.getAvaliacao())+";";
+                        counter++;
+                    }
+                    aux+=auxC;
+                    aux+="album_med|"+String.valueOf(calculo_pontuacao(auxCriticas))+";";
+                    counter=0;
+                }
+                if(a.getMusicas()!=null){
+                    auxMusicas=a.getMusicas();
+                    auxM="musicas_count|"+Integer.toString(auxMusicas.size())+";";
+                    for(Musica m: auxMusicas){
+                        auxM+="musica_"+Integer.toString(counter)+"_name|"+m.getNome()+";";
+                        counter++;
+                    }
+                }
+                aux+=auxM;
+                aux+=";ID|"+mensagem.get("ID");
+                break;// Está aqui bem?
+            }
+        }
+        try {
+            InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+            byte[] buffer = aux.getBytes();
+            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+            socket.send(packet);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    // Vai receber o nome do artista e vai devolver os nomes dos albuns e os atributos do artista
+    public void get_artista(){
+        String aux="";
+        // Vou procurar o artista
+        ArrayList<Album> auxAlbum;
+        String auxA="";
+        int counter=0;
+        for (Artista a : artistas){
+            if (a.getNome().equals(mensagem.get("artista_name"))){// Quando encontrar
+                aux="username|"+mensagem.get("username")+";type|artista_info;artista_name|"+a.getNome()+";";
+                if(a.getData_nasc()!=null){
+                    aux+="artista_data|"+a.getData_nasc().getDia()+"/"+a.getData_nasc().getMes()+"/"+a.getData_nasc().getAno()+";";
+                }
+                if(a.getGenero()!=null){
+                    aux+="artista_genero|"+a.getGenero()+";";
+                }
+                if(a.getDescricao()!=null){
+                    aux+="artista_descricao|"+a.getDescricao()+";";
+                }
+                if(a.getListaAlbuns()!=null){
+                    auxAlbum=a.getListaAlbuns();
+                    auxA="albuns_count|"+Integer.toString(auxAlbum.size())+";";
+                    for(Album al:auxAlbum){
+                        auxA+="album_"+Integer.toString(counter)+"_name|"+al.getNome()+";";
+                        counter++;
+                    }
+                }
+                aux+=auxA;
+                aux+=";ID|"+mensagem.get("ID");
+                break;
+            }
+        }
+        try {
+            InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+            byte[] buffer = aux.getBytes();
+            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+            socket.send(packet);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
     /* Função que vai enviar tudo o que tem a string recebida pelo RMI server */
@@ -383,7 +517,7 @@ class Worker extends Thread {
         }
         try {
             InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-            String aux2 = mensagem.get("username");
+            String aux2 = mensagem.get("username")+";";
             String aux3 = ";ID|" + mensagem.get("ID");
             String mensagem = "username|" + aux2+aux+aux3;
             byte[] buffer = mensagem.getBytes();
@@ -529,7 +663,8 @@ class Worker extends Thread {
             d = new Data(Integer.parseInt(as[0]),Integer.parseInt(as[1]),Integer.parseInt(as[2]));
             Album novo;
             ArrayList <Musica> musicas_album = new ArrayList<>();
-            novo = new Album(mensagem.get("album_name"),d,mensagem.get("album_autor"),musicas_album);
+            ArrayList <String> criticos = new ArrayList<>();
+            novo = new Album(mensagem.get("album_name"),d,mensagem.get("album_autor"),musicas_album,criticos);
             // Vou verificar se o Artista já existe
             // Se não existir o artista
             if(verifica_artista(mensagem.get("album_autor"))==false){
@@ -831,12 +966,14 @@ class Worker extends Thread {
         String aux="type|notification_list;item_count|";
         String aux2=null;
         // Procurar em todas as notificacoes se há alguma com o nome do username em causa
-        for (Notificacao n : notificacoes) {
+        Iterator<Notificacao> iterador = notificacoes.iterator();
+        while (iterador.hasNext()){// Este iterador pode estar mal, a função original está na secretaria
+            Notificacao n = iterador.next();
             if (n.getDestinario().equals(mensagem.get("username"))) {//se tiver notificacoes para este utilizador
                 counter++;
                 aux2=aux2+"nota_" + Integer.toString(counter) + "|" + n.getNota() + ";";
                 //Remover a notifcacao da array List para não voltar a repetir posteriormente
-                notificacoes.remove(n);
+                iterador.remove();
             }
         }
         // Se não tiver notificações

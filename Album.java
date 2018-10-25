@@ -8,6 +8,7 @@ public class Album {
     private double pontuacao_med;
     private String descricao;
     private String autor;
+    private ArrayList <String> criticos;
 
     public String getNome() {
         return nome;
@@ -19,6 +20,7 @@ public class Album {
 
     Album(String nome){
         this.nome=nome;
+        this.pontuacao_med=0;
     }
 
     public String getAutor() {
@@ -45,11 +47,21 @@ public class Album {
         this.descricao = descricao;
     }
 
-    Album(String nome, Data data_lancamento, String autor,ArrayList<Musica> musicas){
+    public ArrayList<String> getCriticos() {
+        return criticos;
+    }
+
+    public void setCriticos(ArrayList<String> criticos) {
+        this.criticos = criticos;
+    }
+
+    Album(String nome, Data data_lancamento, String autor, ArrayList<Musica> musicas, ArrayList<String> criticos){
         this.data_lancamento=data_lancamento;
         this.nome=nome;
         this.autor=autor;
         this.musicas=musicas;
+        this.pontuacao_med=0;
+        this.criticos=criticos;
     }
 
     public void setCriticas(ArrayList<Critica> criticas) {

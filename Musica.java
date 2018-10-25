@@ -19,6 +19,14 @@ public class Musica implements Serializable {
 
     }
 
+    public String getAlbum() {
+        return album;
+    }
+
+    public void setAlbum(String album) {
+        this.album = album;
+    }
+
     public String getNome() {
         return nome;
     }
