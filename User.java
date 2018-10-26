@@ -12,6 +12,9 @@ public class User implements Serializable {
         this.usertype=usertype;
     }
 
+    User(){
+
+    }
     public void setUsername(String username) {
         this.username = username;
     }
@@ -35,4 +38,5 @@ public class User implements Serializable {
     public String getUsertype() {
         return usertype;
     }
+
 }
