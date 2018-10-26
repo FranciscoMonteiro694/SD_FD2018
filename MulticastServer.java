@@ -798,6 +798,7 @@ class Worker extends Thread {
                 d = new Data(Integer.parseInt(as[0]), Integer.parseInt(as[1]), Integer.parseInt(as[2]));
                 a.setData_lancamento(d);
                 a.setDescricao(mensagem.get("album_descricao"));
+                a.getPessoas_descricoes().add(mensagem.get("username"));
                 break;//pode nao estar bem
             }
         }
@@ -898,8 +899,8 @@ class Worker extends Thread {
             d = new Data(Integer.parseInt(as[0]), Integer.parseInt(as[1]), Integer.parseInt(as[2]));
             Album novo;
             ArrayList<Musica> musicas_album = new ArrayList<>();
-            ArrayList<String> criticos = new ArrayList<>();
-            novo = new Album(mensagem.get("album_name"), d, mensagem.get("album_autor"), musicas_album, criticos);
+            ArrayList<String> pessoas_descricoes = new ArrayList<>();
+            novo = new Album(mensagem.get("album_name"), d, mensagem.get("album_autor"), musicas_album, pessoas_descricoes);
             // Vou verificar se o Artista já existe
             // Se não existir o artista
             if (verifica_artista(mensagem.get("album_autor")) == false) {
