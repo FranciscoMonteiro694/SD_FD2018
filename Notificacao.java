@@ -1,4 +1,6 @@
-public class Notificacao {
+import java.io.Serializable;
+
+public class Notificacao implements Serializable {
     private String nota;
     private String destinario;
 
