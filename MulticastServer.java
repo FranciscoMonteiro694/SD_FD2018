@@ -450,7 +450,7 @@ class Worker extends Thread {
                         e.printStackTrace();
                     }
                 } else {
-                    for (User u : users) {//Está a concurrentModificationException
+                    for (User u : users) {//Está a dar concurrentModificationException, usar iterator
                         if (u.getUsername().equals(mensagem.get("username"))) {//se existir, enviar mensagem a dizer que falhou
                             try {
                                 InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
