@@ -198,7 +198,7 @@ public class MulticastServer extends Thread implements Serializable {
                 d = new Data(Integer.parseInt(as[0]), Integer.parseInt(as[1]), Integer.parseInt(as[2]));
                 a.setData_lancamento(d);
                 a.setDescricao(map.get("album_descricao"));
-                if(a.getPessoas_descricoes().contains(map.get("username"))==false) {
+                if(!a.getPessoas_descricoes().contains(map.get("username"))) {
                     a.getPessoas_descricoes().add(map.get("username"));
                 }
                 guardarAlbuns(albuns);
@@ -1131,8 +1131,10 @@ class Worker extends Thread {
                     ArrayList<String> pessoas=a.getPessoas_descricoes();
                     aux2+=Integer.toString(pessoas.size());
                     for(String s:pessoas){
-                        aux2 += ";user_" + Integer.toString(counter) + "_name|" + s;
-                        counter++;
+                        if(!a.getPessoas_descricoes().contains(mensagem.get("username"))) {
+                            aux2 += ";user_" + Integer.toString(counter) + "_name|" + s;
+                            counter++;
+                        }
                     }
                     aux+=aux2;
                     byte[] buffer = aux.getBytes();
