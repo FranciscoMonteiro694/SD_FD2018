@@ -1105,8 +1105,10 @@ class Worker extends Thread {
                     ArrayList<String> pessoas=a.getPessoas_descricoes();
                     aux2+=Integer.toString(pessoas.size());
                     for(String s:pessoas){
-                        aux2+=";user_"+Integer.toString(counter)+"_name|"+s;
-                        counter++;
+                        if(pessoas.contains(s)==false) {
+                            aux2 += ";user_" + Integer.toString(counter) + "_name|" + s;
+                            counter++;
+                        }
                     }
                     aux+=aux2;
                     byte[] buffer = aux.getBytes();
