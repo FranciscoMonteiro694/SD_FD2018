@@ -452,7 +452,7 @@ public class MulticastServer extends Thread implements Serializable {
                     artistas = (ArrayList<Artista>) ois.readObject();
                     ois.close();
                 } catch (IOException e) {
-                    System.out.println("Ola");
+                    System.out.println("Excecao nos artistas "+e);
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
@@ -481,7 +481,7 @@ public class MulticastServer extends Thread implements Serializable {
                     musicas = (ArrayList<Musica>) ois.readObject();
                     ois.close();
                 } catch (IOException e) {
-                    System.out.println("Ola");
+                    System.out.println("Excecao nas musicas "+e);
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
@@ -510,7 +510,7 @@ public class MulticastServer extends Thread implements Serializable {
                     notificacoes = (ArrayList<Notificacao>) ois.readObject();
                     ois.close();
                 } catch (IOException e) {
-                    System.out.println("Ola");
+                    System.out.println("Excecao nos notificacoes"+e);
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
@@ -539,7 +539,7 @@ public class MulticastServer extends Thread implements Serializable {
                     users = (ArrayList<User>) ois.readObject();
                     ois.close();
                 } catch (IOException e) {
-                    System.out.println("Ola");
+                    System.out.println("Excecao nos utilizadores "+e);
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
@@ -570,7 +570,7 @@ public class MulticastServer extends Thread implements Serializable {
                     albuns = (ArrayList<Album>) ois.readObject();
                     ois.close();
                 } catch (IOException e) {
-                    System.out.println("Ola");
+                    System.out.println("Excecao nos albuns "+e);
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
