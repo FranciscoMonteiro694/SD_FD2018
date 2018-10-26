@@ -410,14 +410,14 @@ class Worker extends Thread {
                 }
                 if(a.getMusicas()!=null){
                     auxMusicas=a.getMusicas();
-                    auxM="musicas_count|"+Integer.toString(auxMusicas.size())+";";
+                    auxM="musica_count|"+Integer.toString(auxMusicas.size())+";";
                     for(Musica m: auxMusicas){
                         auxM+="musica_"+Integer.toString(counter)+"_name|"+m.getNome()+";";
                         counter++;
                     }
                 }
                 aux+=auxM;
-                aux+=";ID|"+mensagem.get("ID");
+                aux+="ID|"+mensagem.get("ID");
                 break;// Está aqui bem?
             }
         }
@@ -458,7 +458,7 @@ class Worker extends Thread {
                     }
                 }
                 aux+=auxA;
-                aux+=";ID|"+mensagem.get("ID");
+                aux+="ID|"+mensagem.get("ID");
                 break;
             }
         }
@@ -478,7 +478,7 @@ class Worker extends Thread {
         int alb=0,mus=0,art=0;
         String sk=mensagem.get("search_key");// String recebida pelo RMI server
         String aux ="type|whole_list;album_count|";
-        String albs=null, muss=null,arts=null;
+        String albs="", muss="",arts="";
         //Pesquisar na lista de albuns
         for(Album a:albuns){
             if(a.getNome().toLowerCase().contains(sk.toLowerCase())==true){
