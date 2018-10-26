@@ -408,7 +408,7 @@ class Worker extends Thread {
                         InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
                         aux = ";ID|" + mensagem.get("ID");
                         String notas;
-                        notas=notificacoesUser(mensagem.get("username"));
+                        notas=notificacoesUser1(mensagem.get("username"));
                         String mensagem = "login_try|sucess"+aux+notas;
                         byte[] buffer = mensagem.getBytes();
                         DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
@@ -450,7 +450,7 @@ class Worker extends Thread {
                         e.printStackTrace();
                     }
                 } else {
-                    for (User u : users) {//Está a dar null pointer exception
+                    for (User u : users) {//Está a concurrentModificationException
                         if (u.getUsername().equals(mensagem.get("username"))) {//se existir, enviar mensagem a dizer que falhou
                             try {
                                 InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
@@ -488,9 +488,6 @@ class Worker extends Thread {
                 break;
             case "make_editor"://verificar se o utilizador em causa é o admin ou editor
                 make_editor();
-                break;
-            case "view_notificacoes":
-                ver_notificacoes();
                 break;
             case "request_permission_gerir":
                 check_permissions_gerir();
@@ -554,6 +551,24 @@ class Worker extends Thread {
         for (Notificacao n:notificacoes){
             if(n.getDestinario().equals(user)){
                 aux2+=";notification_"+Integer.toString(counter)+"|"+n.getNota();
+            }
+        }
+        aux+=Integer.toString(counter)+aux2;
+        return aux;
+    }
+
+    public String notificacoesUser1(String user){
+        int counter=0;
+        String aux=";notification_count|";
+        String aux2="";
+        Iterator<Notificacao> iterador = notificacoes.iterator();
+        while (iterador.hasNext()){// Este iterador pode estar mal, a função original está na secretaria
+            Notificacao n = iterador.next();
+            if (n.getDestinario().equals(user)) {//se tiver notificacoes para este utilizador
+                aux2+=";notification_"+Integer.toString(counter)+"|"+n.getNota();
+                counter++;
+                //Remover a notifcacao da array List para não voltar a repetir posteriormente
+                iterador.remove();
             }
         }
         aux+=Integer.toString(counter)+aux2;
