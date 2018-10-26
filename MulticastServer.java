@@ -6,8 +6,6 @@ import java.io.IOException;
 import java.lang.*;
 import java.util.HashMap;
 import java.util.ArrayList;
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.File;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -15,7 +13,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.Iterator;
 import java.io.FileNotFoundException;
-import java.io.EOFException;
 
 public class MulticastServer extends Thread implements Serializable {
     private static int server_id;
@@ -26,10 +23,12 @@ public class MulticastServer extends Thread implements Serializable {
     private ArrayList<Artista> artistas;//Lista de artistas, (um artista pode ser um grupo)
     private ArrayList<Album> albuns;//Lista de albuns
     private ArrayList<Notificacao> notificacoes;//Lista de notificacoes
+    private HashMap<String, String> map;
+    private MulticastSocket socket;
 
 
     public static void main(String[] args) { //meter um id do servidor
-        String teste = "1";
+        String teste = args[0];
         server_id = Integer.parseInt(teste);
         MulticastServer server = new MulticastServer();
         server.start();
@@ -45,14 +44,15 @@ public class MulticastServer extends Thread implements Serializable {
         notificacoes = new ArrayList<>();
         musicas = new ArrayList<>();
         albuns = new ArrayList<>();
-        MulticastSocket socket = null;
+        socket = null;
         System.out.println(this.getName());
-        HashMap<String, String> map;
+        //HashMap<String, String> map;
         leObjetosUtilizadores();
         leObjetosArtistas();
         leObjetosMusicas();
         leObjetosNotificacoes();
         leObjetosAlbuns();
+        String aux;
         try {
             socket = new MulticastSocket(PORT);
             InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
@@ -74,52 +74,51 @@ public class MulticastServer extends Thread implements Serializable {
                         thread.start();
                     } else {//tratar das cenas de registers e assim, talvez fazer um switch aqui dentro, sem mandar mensagens
                         switch (map.get("type")) {
-                            case "register":
-                                //Guardar
-                                if (users.isEmpty() == true) {
+                            case "register"://para registar, tambem vai ter de ser feito nos outros servidores
+                                int flag=0;
+                                //verificar se o nome já está na base de dados
+                                //se estiver
+                                if (users.isEmpty()) { // Se estiver vazio crio como admin
                                     register_admin(map.get("username"), map.get("password"));
                                     //guardar nos ficheiros
                                     guardarUtilizadores(users);
-                                    try {
-                                        group = InetAddress.getByName(MULTICAST_ADDRESS);
-                                        String aux = ";ID|" + map.get("ID");
-                                        String mensagem = "regist_try|sucess;msg|Foi registado como admin!" + aux;
-                                        buffer = mensagem.getBytes();
-                                        packet = new DatagramPacket(buffer, buffer.length, group, PORT);
-                                        socket.send(packet);
-                                    } catch (IOException e) {
-                                        e.printStackTrace();
-                                    }
-                                } else {
-                                    for (User u : users) {//Está a dar null pointer exception
+                                } else { // Se não estiver vazio
+                                    Iterator<User> it = users.iterator();// Cria o iterador
+                                    while (it.hasNext()) {
+                                        User u = it.next();
                                         if (u.getUsername().equals(map.get("username"))) {//se existir, enviar mensagem a dizer que falhou
-                                            try {
-                                                group = InetAddress.getByName(MULTICAST_ADDRESS);
-                                                String aux = ";ID|" + map.get("ID");
-                                                String mensagem = "regist_try|failed" + aux;
-                                                buffer = mensagem.getBytes();
-                                                packet = new DatagramPacket(buffer, buffer.length, group, PORT);
-                                                socket.send(packet);
-                                            } catch (IOException e) {
-                                                e.printStackTrace();
-                                            }
-                                        } else {//se for bem sucedido, registar e adicionar à base de dados
-                                            register(map.get("username"), map.get("password"));
-                                            guardarUtilizadores(users);
-                                            try {
-                                                group = InetAddress.getByName(MULTICAST_ADDRESS);
-                                                String aux = ";ID|" + map.get("ID");
-                                                String mensagem = "regist_try|sucess" + aux;
-                                                buffer = mensagem.getBytes();
-                                                packet = new DatagramPacket(buffer, buffer.length, group, PORT);
-                                                socket.send(packet);
-                                            } catch (IOException e) {
-                                                e.printStackTrace();
-                                            }
+                                            flag=1;
                                         }
 
                                     }
+                                    if(flag==0) {
+                                        register(map.get("username"), map.get("password"));
+                                    }
                                 }
+                                break;
+                            case "inserir_artista":
+                                inserir_artista();
+                                break;
+                            case "inserir_album":
+                                inserir_album();
+                                break;
+                            case "inserir_musica":
+                                inserir_musica();
+                                break;
+                            case "editar_artista":
+                                editar_artista();
+                                break;
+                            case "editar_musica":
+                                editar_musica();
+                                break;
+                            case "editar_album":
+                                editar_album();
+                                break;
+                            case "write_review2":
+                                criticar_album2();
+                                break;
+                            case "make_editor":
+                                make_editor();
                                 break;
                         }
                     }
@@ -133,6 +132,282 @@ public class MulticastServer extends Thread implements Serializable {
         }
 
 
+    }
+    public void make_editor() {
+        // Vai verificar se o user em questao tem permissao de admin ou utilizador
+        if (tipoUser(map.get("username")).equals("admin") || tipoUser(map.get("username")).equals("editor")) {
+            //Ver a que utilizador quer dar permissoes
+            for (User u : users) {
+                if (u.getUsername().equals(map.get("editor_name"))) {// Se encontrou o nome
+                    if (u.getUsertype().equals("editor") || u.getUsertype().equals("admin")) {//se já tem permissoes
+                    } else {//se ainda não tem permissões
+                        u.setUsertype("editor");//altera as permissoes
+                        guardarUtilizadores(users);
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    public void editar_artista() {
+        for (Artista a : artistas) {
+            if (a.getNome().equals(map.get("artista_name"))) {//Quando encontra o artista na lista
+                Data d;
+                String[] as;
+                as = map.get("artista_data").split("/");
+                d = new Data(Integer.parseInt(as[0]), Integer.parseInt(as[1]), Integer.parseInt(as[2]));
+                a.setData_nasc(d);
+                a.setGenero(map.get("artista_genero"));
+                a.setDescricao(map.get("artista_descricao"));
+                guardarArtistas(artistas);
+                break;//pode nao estar bem
+            }
+        }
+
+    }
+
+    public void editar_musica() {
+        for (Musica m : musicas) {
+            if (m.getNome().equals(map.get("musica_name"))) {//Quando encontra a musica na lista
+                Data d;
+                String[] as;
+                as = map.get("musica_data").split("/");
+                d = new Data(Integer.parseInt(as[0]), Integer.parseInt(as[1]), Integer.parseInt(as[2]));
+                m.setData_lancamento(d);
+                m.setDescricao(map.get("musica_descricao"));
+                guardarMusicas(musicas);
+                break;//pode nao estar bem
+            }
+        }
+    }
+
+    public void editar_album() {
+        for (Album a : albuns) {
+            if (a.getNome().equals(map.get("album_name"))) {//Quando encontra o album na lista
+                Data d;
+                String[] as;
+                as = map.get("album_data").split("/");
+                d = new Data(Integer.parseInt(as[0]), Integer.parseInt(as[1]), Integer.parseInt(as[2]));
+                a.setData_lancamento(d);
+                a.setDescricao(map.get("album_descricao"));
+                a.getPessoas_descricoes().add(map.get("username"));
+                guardarAlbuns(albuns);
+                break;//pode nao estar bem
+            }
+        }
+    }
+    public void inserir_album() {
+        // Vai verificar se o album já existe na base de dados
+        // Se ainda não existe
+        if (verifica_album(map.get("album_name")) == false){
+            // Criar o novo album
+            Data d;
+            String[] as;
+            as = map.get("album_data").split("/");
+            d = new Data(Integer.parseInt(as[0]), Integer.parseInt(as[1]), Integer.parseInt(as[2]));
+            Album novo;
+            ArrayList<Musica> musicas_album = new ArrayList<>();
+            ArrayList<String> pessoas_descricoes = new ArrayList<>();
+            novo = new Album(map.get("album_name"), d, map.get("album_autor"), musicas_album, pessoas_descricoes);
+            // Vou verificar se o Artista já existe
+            // Se não existir o artista
+            if (verifica_artista(map.get("album_autor")) == false) {
+                //Vou adicionar o artista
+                ArrayList<Album> lista_albuns = new ArrayList<>();
+                Artista a = new Artista(map.get("album_autor"), lista_albuns);
+                //Criar a lista de albuns
+                artistas.add(a);
+                guardarArtistas(artistas);
+            }
+            albuns.add(novo);
+            // Adicionar o album à lista de albuns do artista
+            for (Artista a : artistas) {
+                if (a.getNome().equals(map.get("album_autor"))) {// Quando encontrar o artista
+                    //Adicionar o album ao artista
+                    a.getListaAlbuns().add(novo);
+
+                }
+            }
+            guardarAlbuns(albuns);
+        }
+    }
+
+    /* Funções para gerir os detalhes de cada lista */
+    /* Só os editores e o admin é que o podem fazer */
+    /* O acesso a estas funções já está protegido pelo RMI Client */
+    public void inserir_artista() {
+        // Se não existir, vai criar
+        if (verifica_artista(map.get("artista_name")) == false) {
+            // Criar o novo artista
+            Data d;
+            String[] as;
+            as = map.get("artista_data").split("/");
+            d = new Data(Integer.parseInt(as[0]), Integer.parseInt(as[1]), Integer.parseInt(as[2]));
+            Artista novo;
+            ArrayList<Album> lista_albuns = new ArrayList<>();
+            novo = new Artista(map.get("artista_name"), d, map.get("artista_descricao"), map.get("artista_genero"), lista_albuns);
+            // Adicionar à lista
+            artistas.add(novo);
+            guardarArtistas(artistas);
+        }
+
+    }
+    public String tipoUser(String utilizador) {
+        for (User u : users) {
+            if (u.getUsername().equals(utilizador)) {
+                return u.getUsertype();
+            }
+        }
+        return null;
+    }
+
+    public void inserir_musica() {
+        // Vai verificar se a musica já existe na base de dados
+        // Se já existe
+        if (verifica_musica(map.get("musica_name")) == false){
+            // Criar a nova musica
+            Data d;
+            String[] as;
+            as = map.get("musica_data").split("/");
+            d = new Data(Integer.parseInt(as[0]), Integer.parseInt(as[1]), Integer.parseInt(as[2]));
+            Musica novo;
+            novo = new Musica(map.get("musica_name"), d, map.get("musica_compositor"), map.get("musica_autor"), map.get("musica_descricao"), map.get("musica_album"));
+            // Vou verificar se o Album e o Artista já existem
+            // Se não existir o artista
+            if (verifica_artista(map.get("musica_autor")) == false) {
+                //Vou adicionar o artista
+                Artista a = new Artista(map.get("musica_autor"));
+                artistas.add(a);
+                guardarArtistas(artistas);
+            }
+            if (verifica_album(map.get("musica_album")) == false) {
+                //Vou adicionar o album
+                Album a = new Album(map.get("musica_album"));
+                albuns.add(a);
+                guardarAlbuns(albuns);
+            }
+            //Procurar o album na lista de albuns e adicionar a musica
+            for (Album a : albuns) {
+                if (a.getNome().equals(map.get("musica_album"))) {// Quando encontrar o album
+                    //Adicionar a musica ao album
+                    a.getMusicas().add(novo);
+                }
+            }
+            musicas.add(novo);
+            guardarMusicas(musicas);
+            guardarAlbuns(albuns);
+        }
+    }
+    // Por iterador
+    public void remover_artista() {
+        //Verificar se o artista está na lista
+        if (verifica_artista(map.get("artista_name")) == true) {
+            Iterator<Artista> it = artistas.iterator();// Cria o iterador
+            while (it.hasNext()) {
+                Artista a = it.next();
+                if (a.getNome().equals(map.get("artista_name"))) {
+                    artistas.remove(a);
+                    try {
+                        InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+                        String aux = map.get("username") + ";remove_artista_try|sucess;" + "type|warning" + ";ID|" + map.get("ID");
+                        String mensagem = "username|" + aux;
+                        byte[] buffer = mensagem.getBytes();
+                        DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+                        socket.send(packet);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    break;// está aqui bem?
+                }
+
+            }
+        }
+        guardarArtistas(artistas);
+    }
+
+    public void remover_album() {
+        //Verificar se o album está na lista
+        if (verifica_album(map.get("album_name")) == true) {
+            Iterator<Album> it = albuns.iterator();// Cria o iterador
+            while (it.hasNext()) {
+                Album a = it.next();
+                if (a.getNome().equals(map.get("album_name"))) {
+                    albuns.remove(a);
+                    try {
+                        InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+                        String aux = map.get("username") + ";remove_album_try|sucess;" + "type|warning" + ";ID|" + map.get("ID");
+                        String mensagem = "username|" + aux;
+                        byte[] buffer = mensagem.getBytes();
+                        DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+                        socket.send(packet);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    break;// está aqui bem?
+                }
+
+            }
+        }
+        guardarAlbuns(albuns);
+    }
+
+    public void remover_musica() {
+        //Verificar se o album está na lista
+        if (verifica_musica(map.get("musica_name")) == true) {
+            Iterator<Musica> it = musicas.iterator();// Cria o iterador
+            while (it.hasNext()) {
+                Musica m = it.next();
+                if (m.getNome().equals(map.get("musica_name"))) {
+                    musicas.remove(m);
+                    try {
+                        InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+                        String aux = map.get("username") + "remove_musica_try|sucess;" + "type|warning" + ";ID|" + map.get("ID");
+                        String mensagem = "username|" + aux;
+                        byte[] buffer = mensagem.getBytes();
+                        DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+                        socket.send(packet);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    break;// está aqui bem?
+                }
+
+            }
+        }
+        guardarMusicas(musicas);
+    }
+
+    /* Função que verifica se o artista já se encontra na base de dados */
+    // Recebe o nome do artista, envia true se existir na lista */
+    public boolean verifica_artista(String nome_artista) {
+        if (artistas.isEmpty()) {
+            return false;
+        }
+        for (Artista a : artistas) {
+            if (a.getNome().equals(nome_artista))
+                return true;
+        }
+        return false;
+    }
+
+    /* Função que verifica se o album já se encontra na base de dados */
+    // Recebe o nome do album, envia true se existir na lista */
+    public boolean verifica_album(String nome_album) {
+        for (Album a : albuns) {
+            if (a.getNome().equals(nome_album))
+                return true;
+        }
+        return false;
+    }
+
+    /* Função que verifica se a musica já se encontra na base de dados */
+    // Recebe o nome do artista, envia true se existir na lista */
+    public boolean verifica_musica(String nome_musica) {
+        for (Musica m : musicas) {
+            if (m.getNome().equals(nome_musica))
+                return true;
+        }
+        return false;
     }
 
 
@@ -153,6 +428,7 @@ public class MulticastServer extends Thread implements Serializable {
         User novo;
         novo = new User(username, password, "admin");
         users.add(novo);
+        guardarUtilizadores(users);
     }
 
     void register(String username, String password) {
@@ -160,6 +436,7 @@ public class MulticastServer extends Thread implements Serializable {
         novo = new User(username, password, "normal");
         //adiciona ao array list de utilizadores
         users.add(novo);
+        guardarUtilizadores(users);
     }
 
     void leObjetosArtistas() {
@@ -363,6 +640,19 @@ public class MulticastServer extends Thread implements Serializable {
             System.out.printf("Ocorreu a exceçao %s ao escrever no ficheiro de objetos dos musicas.\n", e);
         }
     }
+    void criticar_album2() {
+        //Vai receber o album que o utilizador quer criticar, a sua mensagem e a cotacao
+        ArrayList<Critica> criticas;
+        for (Album a : albuns) {
+            if (a.getNome().equals(map.get("item_0_name"))) {//Quando encontra o album na lista de albuns
+                Critica c = new Critica(map.get("review_txt"), Integer.parseInt(map.get("review_avaliacao")));
+                criticas = a.getCriticas();
+                criticas.add(c);
+                a.setCriticas(criticas);
+            }
+        }
+        guardarAlbuns(albuns);
+    }
 }
 
 //Vou ter de pegar no pacote que receber, vou ao protocolo e vou buscar o id do servidor que vai responder
@@ -380,6 +670,9 @@ class Worker extends Thread {
 
     private MulticastSocket socket;
 
+    Worker(){
+
+    }
     Worker(HashMap<String, String> mensagem, MulticastSocket socket, ArrayList<User> users, int server_id, ArrayList<Musica> musicas, ArrayList<Artista> artistas, ArrayList<Album> albuns, ArrayList<Notificacao> notificacoes) {//recebe a mensagem como pedido
         this.mensagem = mensagem;
         this.socket = socket;
@@ -477,6 +770,7 @@ class Worker extends Thread {
                     }
                     if(flag==0) {
                         register(mensagem.get("username"), mensagem.get("password"));
+                        guardarUtilizadores(users);
                         try {
                             InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
                             aux = ";ID|" + mensagem.get("ID");
@@ -569,6 +863,7 @@ class Worker extends Thread {
                 iterador.remove();
             }
         }
+        guardarNotificacoes(notificacoes);
         aux += Integer.toString(counter) + aux2;
         return aux;
     }
@@ -769,6 +1064,7 @@ class Worker extends Thread {
                 a.setData_nasc(d);
                 a.setGenero(mensagem.get("artista_genero"));
                 a.setDescricao(mensagem.get("artista_descricao"));
+                guardarArtistas(artistas);
                 break;//pode nao estar bem
             }
         }
@@ -784,6 +1080,7 @@ class Worker extends Thread {
                 d = new Data(Integer.parseInt(as[0]), Integer.parseInt(as[1]), Integer.parseInt(as[2]));
                 m.setData_lancamento(d);
                 m.setDescricao(mensagem.get("musica_descricao"));
+                guardarMusicas(musicas);
                 break;//pode nao estar bem
             }
         }
@@ -799,6 +1096,24 @@ class Worker extends Thread {
                 a.setData_lancamento(d);
                 a.setDescricao(mensagem.get("album_descricao"));
                 a.getPessoas_descricoes().add(mensagem.get("username"));
+                guardarAlbuns(albuns);
+                try{
+                    String aux="type|warning"+";ID|" + mensagem.get("ID")+";notification|Detalhes do album "+mensagem.get("album_name")+ "alterado";
+                    String aux2=";user_count|";
+                    int counter=0;
+                    InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+                    ArrayList<String> pessoas=a.getPessoas_descricoes();
+                    aux2+=Integer.toString(pessoas.size());
+                    for(String s:pessoas){
+                        aux2+=";user_"+Integer.toString(counter)+"_name|"+s;
+                    }
+                    aux+=aux2;
+                    byte[] buffer = aux.getBytes();
+                    DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+                    socket.send(packet);
+                }catch (IOException e) {
+                    e.printStackTrace();
+                }
                 break;//pode nao estar bem
             }
         }
@@ -911,16 +1226,18 @@ class Worker extends Thread {
 
 
                 artistas.add(a);
+                guardarArtistas(artistas);
             }
             albuns.add(novo);
+            guardarAlbuns(albuns);
             // Adicionar o album à lista de albuns do artista
             for (Artista a : artistas) {
                 if (a.getNome().equals(mensagem.get("album_autor"))) {// Quando encontrar o artista
                     //Adicionar o album ao artista
                     a.getListaAlbuns().add(novo);
-
                 }
             }
+            guardarArtistas(artistas);
             try {
                 InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
                 String aux = mensagem.get("username") + ";insere_album_try|sucess;" + "type|warning" + ";ID|" + mensagem.get("ID");
@@ -964,6 +1281,7 @@ class Worker extends Thread {
             novo = new Artista(mensagem.get("artista_name"), d, mensagem.get("artista_descricao"), mensagem.get("artista_genero"), lista_albuns);
             // Adicionar à lista
             artistas.add(novo);
+            guardarArtistas(artistas);
             try {
                 InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
                 String aux = mensagem.get("username") + ";insere_artista_try|sucess;" + "type|warning" + ";ID|" + mensagem.get("ID");
@@ -1008,11 +1326,13 @@ class Worker extends Thread {
                 //Vou adicionar o artista
                 Artista a = new Artista(mensagem.get("musica_autor"));
                 artistas.add(a);
+                guardarArtistas(artistas);
             }
             if (verifica_album(mensagem.get("musica_album")) == false) {
                 //Vou adicionar o album
                 Album a = new Album(mensagem.get("musica_album"));
                 albuns.add(a);
+                guardarAlbuns(albuns);
             }
             //Procurar o album na lista de albuns e adicionar a musica
             for (Album a : albuns) {
@@ -1022,6 +1342,8 @@ class Worker extends Thread {
                 }
             }
             musicas.add(novo);
+            guardarAlbuns(albuns);
+            guardarMusicas(musicas);
             try {
                 InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
                 String aux = mensagem.get("username") + ";insere_musica_try|sucess;" + "type|warning" + ";ID|" + mensagem.get("ID");
@@ -1037,8 +1359,10 @@ class Worker extends Thread {
 
     public void remover_artista() {
         //Verificar se o artista está na lista
-        if (verifica_musica(mensagem.get("musica_name")) == true) {
-            for (Artista a : artistas) {
+        if (verifica_artista(mensagem.get("artista_name")) == true) {
+            Iterator<Artista> it = artistas.iterator();// Cria o iterador
+            while (it.hasNext()) {
+                Artista a = it.next();
                 if (a.getNome().equals(mensagem.get("artista_name"))) {
                     artistas.remove(a);
                     try {
@@ -1067,12 +1391,15 @@ class Worker extends Thread {
                 e.printStackTrace();
             }
         }
+        guardarArtistas(artistas);
     }
 
     public void remover_album() {
         //Verificar se o album está na lista
         if (verifica_album(mensagem.get("album_name")) == true) {
-            for (Album a : albuns) {
+            Iterator<Album> it = albuns.iterator();// Cria o iterador
+            while (it.hasNext()) {
+                Album a = it.next();
                 if (a.getNome().equals(mensagem.get("album_name"))) {
                     albuns.remove(a);
                     try {
@@ -1101,12 +1428,16 @@ class Worker extends Thread {
                 e.printStackTrace();
             }
         }
+        guardarAlbuns(albuns);
+
     }
 
     public void remover_musica() {
         //Verificar se o album está na lista
-        if (verifica_album(mensagem.get("musica_name")) == true) {
-            for (Musica m : musicas) {
+        if (verifica_musica(mensagem.get("musica_name")) == true) {
+            Iterator<Musica> it = musicas.iterator();// Cria o iterador
+            while (it.hasNext()) {
+                Musica m = it.next();
                 if (m.getNome().equals(mensagem.get("musica_name"))) {
                     musicas.remove(m);
                     try {
@@ -1135,6 +1466,8 @@ class Worker extends Thread {
                 e.printStackTrace();
             }
         }
+        guardarMusicas(musicas);
+
     }
 
     /* Função que verifica se o artista já se encontra na base de dados */
@@ -1283,6 +1616,7 @@ class Worker extends Thread {
                     } else {//se ainda não tem permissões
                         try {
                             u.setUsertype("editor");//altera as permissoes
+                            guardarUtilizadores(users);
                             aux = "editor_made|" + mensagem.get("editor_name") + ";ID|" + mensagem.get("ID");
                             ;
                             InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
@@ -1358,6 +1692,7 @@ class Worker extends Thread {
             }
         }
         try {
+            guardarAlbuns(albuns);
             String mensagem = "type|warning;msg|Critica escrita com sucesso!";
             InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
             byte[] buffer = mensagem.getBytes();
@@ -1373,6 +1708,8 @@ class Worker extends Thread {
         User novo;
         novo = new User(username, password, "admin");
         users.add(novo);
+        guardarUtilizadores(users);
+
     }
 
     //Funcao para registar pessoa
@@ -1381,6 +1718,7 @@ class Worker extends Thread {
         novo = new User(username, password, "normal");
         //adiciona ao array list de utilizadores
         users.add(novo);
+        guardarUtilizadores(users);
     }
     /* Funções para lidar com ficheiros */
 
