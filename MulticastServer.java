@@ -861,6 +861,17 @@ class Worker extends Thread {
     public void receber_notificacoes(){
         Notificacao n = new Notificacao(mensagem.get("notification"),mensagem.get("username"));
         notificacoes.add(n);
+        //Mandar mensagem para facilitar o RMI server
+        try{
+            String aux="";
+            InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+            aux="type|warning;msg|Notificação adicionada!;ID|"+mensagem.get("ID");
+            byte[] buffer = aux.getBytes();
+            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+            socket.send(packet);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         guardarNotificacoes(notificacoes);
     }
 
