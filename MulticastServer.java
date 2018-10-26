@@ -120,6 +120,9 @@ public class MulticastServer extends Thread implements Serializable {
                             case "make_editor":
                                 make_editor();
                                 break;
+                            case "new_notification":
+                                receber_notificacoes();
+                                break;
                         }
                     }
                 }
@@ -132,6 +135,11 @@ public class MulticastServer extends Thread implements Serializable {
         }
 
 
+    }
+    public void receber_notificacoes(){
+        Notificacao n = new Notificacao(map.get("notification"),map.get("username"));
+        notificacoes.add(n);
+        guardarNotificacoes(notificacoes);
     }
     public void make_editor() {
         // Vai verificar se o user em questao tem permissao de admin ou utilizador
@@ -672,9 +680,6 @@ class Worker extends Thread {
 
     private MulticastSocket socket;
 
-    Worker(){
-
-    }
     Worker(HashMap<String, String> mensagem, MulticastSocket socket, ArrayList<User> users, int server_id, ArrayList<Musica> musicas, ArrayList<Artista> artistas, ArrayList<Album> albuns, ArrayList<Notificacao> notificacoes) {//recebe a mensagem como pedido
         this.mensagem = mensagem;
         this.socket = socket;
@@ -847,8 +852,16 @@ class Worker extends Thread {
             case "get_artista":
                 get_artista();
                 break;
-
+            case "new_notification":
+                receber_notificacoes();
+                break;
         }
+    }
+    // Função que vai receber as notificações e as vai adicionar ao array de notificações
+    public void receber_notificacoes(){
+        Notificacao n = new Notificacao(mensagem.get("notification"),mensagem.get("username"));
+        notificacoes.add(n);
+        guardarNotificacoes(notificacoes);
     }
 
     public String notificacoesUser1(String user) {
