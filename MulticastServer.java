@@ -48,13 +48,11 @@ public class MulticastServer extends Thread implements Serializable {
         MulticastSocket socket = null;
         System.out.println(this.getName());
         HashMap<String, String> map;
-        leObjetosUtilizadores1();
-        /*
+        leObjetosUtilizadores();
         leObjetosArtistas();
         leObjetosMusicas();
         leObjetosNotificacoes();
         leObjetosAlbuns();
-        */
         try {
             socket = new MulticastSocket(PORT);
             InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
@@ -163,72 +161,93 @@ public class MulticastServer extends Thread implements Serializable {
         users.add(novo);
     }
     void leObjetosArtistas() {
-        ObjectInputStream ois = null;
-        try {
-            String filename = "artistas" + Integer.toString(server_id) + ".obj";
+        ObjectInputStream ois=null;
+        //Vai tentar ler
+        String filename = "artistas" + Integer.toString(server_id) + ".obj";
+        try{
             File f = new File(filename);
             FileInputStream fis = new FileInputStream(f);
             ois = new ObjectInputStream(fis);
-        } catch (IOException e) {
-            System.out.println(" ");
-        }
-        if (ois != null) {
-            try {
-                artistas = (ArrayList<Artista>) ois.readObject();
-                ois.close();
-            } catch (ClassNotFoundException e) {
-                System.out.println(e);
-            } catch (IOException e) {
-                System.out.println(e);
+            if(ois!=null){
+                try{
+                    artistas=(ArrayList<Artista>)ois.readObject();
+                    ois.close();
+                }catch(IOException e) {
+                    System.out.println("Ola");
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
             }
+        }catch(FileNotFoundException i ) {
+            try{
+                FileOutputStream f = new FileOutputStream(new File(filename));
+            }catch(IOException e){
+                System.out.println("Ocorreu aqui1: " + e);
+            }
+        }catch(IOException e){
+            //System.out.println("Ocorreu aqui2: " +e); // Está a dar exceção aqui
         }
     }
 
     void leObjetosMusicas() {
-        ObjectInputStream ois = null;
-        try {
-            String filename = "musicas" + Integer.toString(server_id) + ".obj";
+        ObjectInputStream ois=null;
+        //Vai tentar ler
+        String filename = "musicas" + Integer.toString(server_id) + ".obj";
+        try{
             File f = new File(filename);
             FileInputStream fis = new FileInputStream(f);
             ois = new ObjectInputStream(fis);
-        } catch (IOException e) {
-            System.out.println(e);
-        }
-        if (ois != null) {
-            try {
-                musicas = (ArrayList<Musica>) ois.readObject();
-                ois.close();
-            } catch (ClassNotFoundException e) {
-                System.out.println(e);
-            } catch (IOException e) {
-                System.out.println(e);
+            if(ois!=null){
+                try{
+                    musicas=(ArrayList<Musica>)ois.readObject();
+                    ois.close();
+                }catch(IOException e) {
+                    System.out.println("Ola");
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
             }
+        }catch(FileNotFoundException i ) {
+            try{
+                FileOutputStream f = new FileOutputStream(new File(filename));
+            }catch(IOException e){
+                System.out.println("Ocorreu aqui1: " + e);
+            }
+        }catch(IOException e){
+            //System.out.println("Ocorreu aqui2: " +e); // Está a dar exceção aqui
         }
     }
 
     void leObjetosNotificacoes() {
-        ObjectInputStream ois = null;
-        try {
-            String filename = "notificacoes" + Integer.toString(server_id) + ".obj";
+        ObjectInputStream ois=null;
+        //Vai tentar ler
+        String filename = "notificacoes" + Integer.toString(server_id) + ".obj";
+        try{
             File f = new File(filename);
             FileInputStream fis = new FileInputStream(f);
             ois = new ObjectInputStream(fis);
-        } catch (IOException e) {
-            System.out.println(e);
-        }
-        if (ois != null) {
-            try {
-                notificacoes = (ArrayList<Notificacao>) ois.readObject();
-                ois.close();
-            } catch (ClassNotFoundException e) {
-                System.out.println(e);
-            } catch (IOException e) {
-                System.out.println(e);
+            if(ois!=null){
+                try{
+                    notificacoes=(ArrayList<Notificacao>)ois.readObject();
+                    ois.close();
+                }catch(IOException e) {
+                    System.out.println("Ola");
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
             }
+        }catch(FileNotFoundException i ) {
+            try{
+                FileOutputStream f = new FileOutputStream(new File(filename));
+            }catch(IOException e){
+                System.out.println("Ocorreu aqui1: " + e);
+            }
+        }catch(IOException e){
+            //System.out.println("Ocorreu aqui2: " +e); // Está a dar exceção aqui
         }
     }
 
-    void leObjetosUtilizadores1(){
+    void leObjetosUtilizadores(){
         ObjectInputStream ois=null;
         //Vai tentar ler
         String filename = "utilizadores" + Integer.toString(server_id) + ".obj";
@@ -258,47 +277,32 @@ public class MulticastServer extends Thread implements Serializable {
 
 
     }
-
-    void leObjetosUtilizadores() {
-        ObjectInputStream ois = null;
-        try {
-            String filename = "utilizadores" + Integer.toString(server_id) + ".obj";
-            File f = new File(filename);
-            FileInputStream fis = new FileInputStream(f);
-            ois = new ObjectInputStream(fis);
-        } catch (IOException e) {
-            System.out.println(e);
-        }
-        if (ois != null) {
-            try {
-                users = (ArrayList<User>) ois.readObject();
-                ois.close();
-            } catch (ClassNotFoundException e) {
-                System.out.println(e);
-            } catch (IOException e) {
-                System.out.println(e);
-            }
-        }
-    }
     void leObjetosAlbuns(){
-        ObjectInputStream ois = null;
-        try {
-            String filename = "albuns" + Integer.toString(server_id) + ".obj";
+        ObjectInputStream ois=null;
+        //Vai tentar ler
+        String filename = "albuns" + Integer.toString(server_id) + ".obj";
+        try{
             File f = new File(filename);
             FileInputStream fis = new FileInputStream(f);
             ois = new ObjectInputStream(fis);
-        } catch (IOException e) {
-            System.out.println(e);
-        }
-        if (ois != null) {
-            try {
-                albuns = (ArrayList<Album>) ois.readObject();
-                ois.close();
-            } catch (ClassNotFoundException e) {
-                System.out.println(e);
-            } catch (IOException e) {
-                System.out.println(e);
+            if(ois!=null){
+                try{
+                    albuns=(ArrayList<Album>)ois.readObject();
+                    ois.close();
+                }catch(IOException e) {
+                    System.out.println("Ola");
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
             }
+        }catch(FileNotFoundException i ) {
+            try{
+                FileOutputStream f = new FileOutputStream(new File(filename));
+            }catch(IOException e){
+                System.out.println("Ocorreu aqui1: " + e);
+            }
+        }catch(IOException e){
+            //System.out.println("Ocorreu aqui2: " +e);
         }
     }
 
@@ -397,12 +401,15 @@ class Worker extends Thread {
                         logins_bd[1] = u.getPassword();
                     }
                 }
-                //Se estiver, responder com uma mensagem a dizer que foi logado com sucesso
+                // Se estiver, responder com uma mensagem a dizer que foi logado com sucesso
+                // Mandar também as notificações do user
                 if (logins_bd[0].equals(mensagem.get("username")) && logins_bd[1].equals(mensagem.get("password"))) {
                     try {
                         InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
                         aux = ";ID|" + mensagem.get("ID");
-                        String mensagem = "login_try|sucess"+aux;
+                        String notas;
+                        notas=notificacoesUser(mensagem.get("username"));
+                        String mensagem = "login_try|sucess"+aux+notas;
                         byte[] buffer = mensagem.getBytes();
                         DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
                         socket.send(packet);
@@ -538,6 +545,19 @@ class Worker extends Thread {
                 break;
 
         }
+    }
+    public String notificacoesUser(String user){
+        // Vai receber o string do utilizador que deu login, vai às notificações e vai criar uma String auxiliar para adiconar à mensagem com as notificações
+        String aux=";notification_count|";
+        String aux2="";
+        int counter=0;
+        for (Notificacao n:notificacoes){
+            if(n.getDestinario().equals(user)){
+                aux2+=";notification_"+Integer.toString(counter)+"|"+n.getNota();
+            }
+        }
+        aux+=Integer.toString(counter)+aux2;
+        return aux;
     }
     public double calculo_pontuacao(ArrayList<Critica> criticas){
         if (criticas.isEmpty())
@@ -1233,7 +1253,7 @@ class Worker extends Thread {
                     } else {//se ainda não tem permissões
                         try {
                             u.setUsertype("editor");//altera as permissoes
-                            aux = "editor_made|" + mensagem.get("username");
+                            aux = "editor_made|" + mensagem.get("editor_name");
                             InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
                             String mensagem = "msg|Permissoes atualizadas!;" + aux;
                             byte[] buffer = mensagem.getBytes();
@@ -1329,95 +1349,6 @@ class Worker extends Thread {
         users.add(novo);
     }
     /* Funções para lidar com ficheiros */
-    /* Falta testar */
-
-    void leObjetosArtistas() {
-        ObjectInputStream ois = null;
-        try {
-            String filename = "artistas" + Integer.toString(server_id) + ".obj";
-            File f = new File(filename);
-            FileInputStream fis = new FileInputStream(f);
-            ois = new ObjectInputStream(fis);
-        } catch (IOException e) {
-            System.out.println(e);
-        }
-        if (ois != null) {
-            try {
-                artistas = (ArrayList<Artista>) ois.readObject();
-                ois.close();
-            } catch (ClassNotFoundException e) {
-                System.out.println(e);
-            } catch (IOException e) {
-                System.out.println(e);
-            }
-        }
-    }
-
-    void leObjetosMusicas() {
-        ObjectInputStream ois = null;
-        try {
-            String filename = "musicas" + Integer.toString(server_id) + ".obj";
-            File f = new File(filename);
-            FileInputStream fis = new FileInputStream(f);
-            ois = new ObjectInputStream(fis);
-        } catch (IOException e) {
-            System.out.println(e);
-        }
-        if (ois != null) {
-            try {
-                musicas = (ArrayList<Musica>) ois.readObject();
-                ois.close();
-            } catch (ClassNotFoundException e) {
-                System.out.println(e);
-            } catch (IOException e) {
-                System.out.println(e);
-            }
-        }
-    }
-
-    void leObjetosNotificacoes() {
-        ObjectInputStream ois = null;
-        try {
-            String filename = "notificacoes" + Integer.toString(server_id) + ".obj";
-            File f = new File(filename);
-            FileInputStream fis = new FileInputStream(f);
-            ois = new ObjectInputStream(fis);
-        } catch (IOException e) {
-            System.out.println(e);
-        }
-        if (ois != null) {
-            try {
-                notificacoes = (ArrayList<Notificacao>) ois.readObject();
-                ois.close();
-            } catch (ClassNotFoundException e) {
-                System.out.println(e);
-            } catch (IOException e) {
-                System.out.println(e);
-            }
-        }
-    }
-
-    void leObjetosUtilizadores() {
-        ObjectInputStream ois = null;
-        try {
-            String filename = "utilizadores" + Integer.toString(server_id) + ".obj";
-            File f = new File(filename);
-            FileInputStream fis = new FileInputStream(f);
-            ois = new ObjectInputStream(fis);
-        } catch (IOException e) {
-            System.out.println(e);
-        }
-        if (ois != null) {
-            try {
-                users = (ArrayList<User>) ois.readObject();
-                ois.close();
-            } catch (ClassNotFoundException e) {
-                System.out.println(e);
-            } catch (IOException e) {
-                System.out.println(e);
-            }
-        }
-    }
 
     public void guardarUtilizadores(ArrayList<User> u) {
         try {
@@ -1462,27 +1393,7 @@ class Worker extends Thread {
             System.out.printf("Ocorreu a exceçao %s ao escrever no ficheiro de objetos dos musicas.\n", e);
         }
     }
-    void leObjetosAlbuns(){
-        ObjectInputStream ois = null;
-        try {
-            String filename = "albuns" + Integer.toString(server_id) + ".obj";
-            File f = new File(filename);
-            FileInputStream fis = new FileInputStream(f);
-            ois = new ObjectInputStream(fis);
-        } catch (IOException e) {
-            System.out.println(e);
-        }
-        if (ois != null) {
-            try {
-                albuns = (ArrayList<Album>) ois.readObject();
-                ois.close();
-            } catch (ClassNotFoundException e) {
-                System.out.println(e);
-            } catch (IOException e) {
-                System.out.println(e);
-            }
-        }
-    }
+
 
     public void guardarAlbuns(ArrayList<Album> a){
         try {
