@@ -1098,7 +1098,7 @@ class Worker extends Thread {
                 a.getPessoas_descricoes().add(mensagem.get("username"));
                 guardarAlbuns(albuns);
                 try{
-                    String aux="type|warning"+";ID|" + mensagem.get("ID")+";notification|Detalhes do album "+mensagem.get("album_name")+ "alterado";
+                    String aux="type|warning"+";ID|" + mensagem.get("ID")+";notification|Detalhes do album "+mensagem.get("album_name")+ " alterado";
                     String aux2=";user_count|";
                     int counter=0;
                     InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
@@ -1106,6 +1106,7 @@ class Worker extends Thread {
                     aux2+=Integer.toString(pessoas.size());
                     for(String s:pessoas){
                         aux2+=";user_"+Integer.toString(counter)+"_name|"+s;
+                        counter++;
                     }
                     aux+=aux2;
                     byte[] buffer = aux.getBytes();
