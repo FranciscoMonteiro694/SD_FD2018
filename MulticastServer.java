@@ -1121,7 +1121,9 @@ class Worker extends Thread {
                 d = new Data(Integer.parseInt(as[0]), Integer.parseInt(as[1]), Integer.parseInt(as[2]));
                 a.setData_lancamento(d);
                 a.setDescricao(mensagem.get("album_descricao"));
-                a.getPessoas_descricoes().add(mensagem.get("username"));
+                if(!a.getPessoas_descricoes().contains(mensagem.get("username"))) {
+                    a.getPessoas_descricoes().add(mensagem.get("username"));
+                }
                 guardarAlbuns(albuns);
                 try{
                     String aux="type|warning"+";ID|" + mensagem.get("ID")+";notification|Detalhes do album "+mensagem.get("album_name")+ " alterado";
@@ -1131,10 +1133,8 @@ class Worker extends Thread {
                     ArrayList<String> pessoas=a.getPessoas_descricoes();
                     aux2+=Integer.toString(pessoas.size());
                     for(String s:pessoas){
-                        if(!a.getPessoas_descricoes().contains(mensagem.get("username"))) {
                             aux2 += ";user_" + Integer.toString(counter) + "_name|" + s;
                             counter++;
-                        }
                     }
                     aux+=aux2;
                     byte[] buffer = aux.getBytes();
@@ -1147,8 +1147,8 @@ class Worker extends Thread {
             }
         }
     }
-    /* Funções que vão enviar as listas de artistas,albuns e musicas para o RMI server mostrar ao cliente */
 
+    /* Funções que vão enviar as listas de artistas,albuns e musicas para o RMI server mostrar ao cliente */
     public void enviar_artistas() {
         try {
             InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
