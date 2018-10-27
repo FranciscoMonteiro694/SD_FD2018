@@ -53,10 +53,10 @@ public class MulticastServer extends Thread implements Serializable {
         leObjetosNotificacoes();
         leObjetosAlbuns();
         String aux;
-        Helper h = new Helper(server_id,socket);
-        h.start();
         try {
             socket = new MulticastSocket(PORT);
+            Helper h = new Helper(server_id,socket);
+            h.start();
             InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
             socket.joinGroup(group);
             while (true) {
@@ -450,7 +450,7 @@ public class MulticastServer extends Thread implements Serializable {
         users.add(novo);
         guardarUtilizadores(users);
     }
-
+    @SuppressWarnings("unchecked")
     void leObjetosArtistas() {
         ObjectInputStream ois = null;
         //Vai tentar ler
@@ -479,7 +479,7 @@ public class MulticastServer extends Thread implements Serializable {
             //System.out.println("Ocorreu aqui2: " +e); // Está a dar exceção aqui
         }
     }
-
+    @SuppressWarnings("unchecked")
     void leObjetosMusicas() {
         ObjectInputStream ois = null;
         //Vai tentar ler
@@ -508,7 +508,7 @@ public class MulticastServer extends Thread implements Serializable {
             //System.out.println("Ocorreu aqui2: " +e); // Está a dar exceção aqui
         }
     }
-
+    @SuppressWarnings("unchecked")
     void leObjetosNotificacoes() {
         ObjectInputStream ois = null;
         //Vai tentar ler
@@ -537,7 +537,7 @@ public class MulticastServer extends Thread implements Serializable {
             //System.out.println("Ocorreu aqui2: " +e); // Está a dar exceção aqui
         }
     }
-
+    @SuppressWarnings("unchecked")
     void leObjetosUtilizadores() {
         ObjectInputStream ois = null;
         //Vai tentar ler
@@ -568,7 +568,7 @@ public class MulticastServer extends Thread implements Serializable {
 
 
     }
-
+    @SuppressWarnings("unchecked")
     void leObjetosAlbuns() {
         ObjectInputStream ois = null;
         //Vai tentar ler
