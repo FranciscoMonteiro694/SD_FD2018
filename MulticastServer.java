@@ -53,6 +53,8 @@ public class MulticastServer extends Thread implements Serializable {
         leObjetosNotificacoes();
         leObjetosAlbuns();
         String aux;
+        Helper h = new Helper(server_id,socket);
+        h.start();
         try {
             socket = new MulticastSocket(PORT);
             InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
@@ -1804,6 +1806,36 @@ class Worker extends Thread {
             os.close();
         } catch (IOException e) {
             System.out.printf("Ocorreu a exceçao %s ao escrever no ficheiro de objetos dos albuns.\n", e);
+        }
+    }
+}
+
+/* Thread que envia o seu id de x em x tempo para o RMI server */
+class Helper extends Thread{
+    private String MULTICAST_ADDRESS = "224.0.224.0";
+    private int PORT = 4321;
+    private MulticastSocket socket;
+    private int server_id;
+
+    // Tem de receber o id do servidor
+    Helper(int server_id,MulticastSocket socket){
+        this.server_id=server_id;
+        this.socket=socket;
+    }
+    public void run(){
+        while(true) {
+            try {
+                InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+                String mensagem = "type|id_warning;idserver|"+Integer.toString(server_id);
+                byte[] buffer = mensagem.getBytes();
+                DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+                socket.send(packet);
+                sleep(5000);
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 }
