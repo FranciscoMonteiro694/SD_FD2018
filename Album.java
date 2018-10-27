@@ -56,13 +56,14 @@ public class Album implements Serializable {
         this.pessoas_descricoes = pessoas_descricoes;
     }
 
-    Album(String nome, Data data_lancamento, String autor, ArrayList<Musica> musicas, ArrayList<String> pessoas_descricoes){
+    Album(String nome, Data data_lancamento, String autor, ArrayList<Musica> musicas, ArrayList<String> pessoas_descricoes,ArrayList<Critica> criticas){
         this.data_lancamento=data_lancamento;
         this.nome=nome;
         this.autor=autor;
         this.musicas=musicas;
         this.pontuacao_med=0;
         this.pessoas_descricoes=pessoas_descricoes;
+        this.criticas=criticas;
     }
 
     public void setCriticas(ArrayList<Critica> criticas) {

@@ -25,6 +25,7 @@ public class MulticastServer extends Thread implements Serializable {
     private ArrayList<Notificacao> notificacoes;//Lista de notificacoes
     private HashMap<String, String> map;
     private MulticastSocket socket;
+    static final long serialVersionUID = 42L;// Para resolver warning
 
 
     public static void main(String[] args) { //meter um id do servidor
@@ -116,7 +117,7 @@ public class MulticastServer extends Thread implements Serializable {
                             case "editar_album":
                                 editar_album();
                                 break;
-                            case "write_review2":
+                            case "write_review":
                                 criticar_album2();
                                 break;
                             case "make_editor":
@@ -220,7 +221,8 @@ public class MulticastServer extends Thread implements Serializable {
             Album novo;
             ArrayList<Musica> musicas_album = new ArrayList<>();
             ArrayList<String> pessoas_descricoes = new ArrayList<>();
-            novo = new Album(map.get("album_name"), d, map.get("album_autor"), musicas_album, pessoas_descricoes);
+            ArrayList<Critica> criticas = new ArrayList<>();
+            novo = new Album(map.get("album_name"), d, map.get("album_autor"), musicas_album, pessoas_descricoes,criticas);
             // Vou verificar se o Artista já existe
             // Se não existir o artista
             if (verifica_artista(map.get("album_autor")) == false) {
@@ -381,7 +383,7 @@ public class MulticastServer extends Thread implements Serializable {
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                    break;// está aqui bem?
+                    break;
                 }
 
             }
@@ -476,7 +478,6 @@ public class MulticastServer extends Thread implements Serializable {
                 System.out.println("Ocorreu aqui1: " + e);
             }
         } catch (IOException e) {
-            //System.out.println("Ocorreu aqui2: " +e); // Está a dar exceção aqui
         }
     }
     @SuppressWarnings("unchecked")
@@ -594,7 +595,6 @@ public class MulticastServer extends Thread implements Serializable {
                 System.out.println("Ocorreu aqui1: " + e);
             }
         } catch (IOException e) {
-            //System.out.println("Ocorreu aqui2: " +e);
         }
     }
 
@@ -656,8 +656,8 @@ public class MulticastServer extends Thread implements Serializable {
         //Vai receber o album que o utilizador quer criticar, a sua mensagem e a cotacao
         ArrayList<Critica> criticas;
         for (Album a : albuns) {
-            if (a.getNome().equals(map.get("item_0_name"))) {//Quando encontra o album na lista de albuns
-                Critica c = new Critica(map.get("review_txt"), Integer.parseInt(map.get("review_avaliacao")));
+            if (a.getNome().equals(map.get("album_name"))) {//Quando encontra o album na lista de albuns
+                Critica c = new Critica(map.get("review_critica"), Integer.parseInt(map.get("review_pontuacao")));
                 criticas = a.getCriticas();
                 criticas.add(c);
                 a.setCriticas(criticas);
@@ -667,7 +667,6 @@ public class MulticastServer extends Thread implements Serializable {
     }
 }
 
-//Vou ter de pegar no pacote que receber, vou ao protocolo e vou buscar o id do servidor que vai responder
 class Worker extends Thread {
     private int server_id;
     private String MULTICAST_ADDRESS = "224.0.224.0";
@@ -700,6 +699,8 @@ class Worker extends Thread {
         switch (mensagem.get("type")) {
             case "login"://para dar login
                 String[] logins_bd = new String[2];//para guardar os logins em causa da base de dados e comparar com os da mensagem
+                logins_bd[0]="";
+                logins_bd[1]="";
                 //Vou pegar no username e na password da mensagem e vou ver se está na base de dados
                 for (User u : users) {
                     if (u.getUsername().equals(mensagem.get("username"))) {
@@ -738,7 +739,7 @@ class Worker extends Thread {
                     }
                 }
                 break;
-            case "register"://para registar, tambem vai ter de ser feito nos outros servidores
+            case "register":
                 int flag=0;
                 //verificar se o nome já está na base de dados
                 //se estiver
@@ -758,7 +759,6 @@ class Worker extends Thread {
                     }
                 } else { // Se não estiver vazio
                     Iterator<User> it = users.iterator();// Cria o iterador
-                    // Este iterador pode estar mal, a função original está na secretaria
                     while (it.hasNext()) {//Está a dar concurrentModificationException, usar iterator
                         User u = it.next();
                         if (u.getUsername().equals(mensagem.get("username"))) {//se existir, enviar mensagem a dizer que falhou
@@ -793,14 +793,10 @@ class Worker extends Thread {
                     }
                 }
                 break;
-            case "write_review"://para escrever criticas
-                //vai ter de enviar a lista de todos os albuns para o utilizador escolher qual quer
-                criticar_album();
-                break;
-            case "write_review2":
+            case "write_review":
                 criticar_album2();
                 break;
-            case "make_editor"://verificar se o utilizador em causa é o admin ou editor
+            case "make_editor":
                 make_editor();
                 break;
             case "request_permission_gerir":
@@ -903,7 +899,7 @@ class Worker extends Thread {
         for (Critica c : criticas) {
             acum += c.getAvaliacao();
         }
-        return acum / criticas.size();
+        return (double)(acum / criticas.size());
 
     }
 
@@ -1135,8 +1131,8 @@ class Worker extends Thread {
                     ArrayList<String> pessoas=a.getPessoas_descricoes();
                     aux2+=Integer.toString(pessoas.size());
                     for(String s:pessoas){
-                            aux2 += ";user_" + Integer.toString(counter) + "_name|" + s;
-                            counter++;
+                        aux2 += ";user_" + Integer.toString(counter) + "_name|" + s;
+                        counter++;
                     }
                     aux+=aux2;
                     byte[] buffer = aux.getBytes();
@@ -1246,7 +1242,8 @@ class Worker extends Thread {
             Album novo;
             ArrayList<Musica> musicas_album = new ArrayList<>();
             ArrayList<String> pessoas_descricoes = new ArrayList<>();
-            novo = new Album(mensagem.get("album_name"), d, mensagem.get("album_autor"), musicas_album, pessoas_descricoes);
+            ArrayList<Critica> criticas = new ArrayList();
+            novo = new Album(mensagem.get("album_name"), d, mensagem.get("album_autor"), musicas_album, pessoas_descricoes,criticas);
             // Vou verificar se o Artista já existe
             // Se não existir o artista
             if (verifica_artista(mensagem.get("album_autor")) == false) {
@@ -1565,51 +1562,6 @@ class Worker extends Thread {
         }
     }
 
-    //Quando um cliente dá login, vai enviar uma mensagem para o servidor para ele ver se tem notificacoes
-    // Em principio posso apagar
-    public void ver_notificacoes() {
-        int counter = 0;
-        String aux = "type|notification_list;item_count|";
-        String aux2 = null;
-        // Procurar em todas as notificacoes se há alguma com o nome do username em causa
-        Iterator<Notificacao> iterador = notificacoes.iterator();
-        while (iterador.hasNext()) {// Este iterador pode estar mal, a função original está na secretaria
-            Notificacao n = iterador.next();
-            if (n.getDestinario().equals(mensagem.get("username"))) {//se tiver notificacoes para este utilizador
-                counter++;
-                aux2 = aux2 + "nota_" + Integer.toString(counter) + "|" + n.getNota() + ";";
-                //Remover a notifcacao da array List para não voltar a repetir posteriormente
-                iterador.remove();
-            }
-        }
-        // Se não tiver notificações
-        if (counter == 0) {
-            try {
-                InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                aux = mensagem.get("username") + "type|warning;msg|Nao tem notificacoes!" + ";ID|" + mensagem.get("ID");
-                String mensagem = "username|" + aux;
-                byte[] buffer = mensagem.getBytes();
-                DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
-                socket.send(packet);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        // Se tiver notificações
-        else {
-            String message = aux + Integer.toString(counter) + aux2 + ";ID|" + mensagem.get("ID");
-            ;
-            try {
-                InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                byte[] buffer = message.getBytes();
-                DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
-                socket.send(packet);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
     //Metodo que vai dar permissoes a outros utilizadores
     public void make_editor() {
         int flag=0;
@@ -1678,45 +1630,12 @@ class Worker extends Thread {
         }
     }
 
-    //Função que vai enviar por mensagem a lista de todos os albuns
-    //Falta testar
-    public void criticar_album() {
-        int tamanho = albuns.size();
-        //Se não houver album nenhum
-        if (tamanho == 0) {
-            //Enviar mensagem a dizer que não há albuns
-            try {
-                InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                String mensagem = "type|warning;msg|Não há albuns disponveis!!";
-                byte[] buffer = mensagem.getBytes();
-                DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
-                socket.send(packet);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-        } else {
-            String mensagem = "type|album_list;item_count|" + Integer.toString(tamanho) + ";";
-            for (int i = 0; i < albuns.size(); i++) {
-                mensagem = mensagem + "item_" + Integer.toString(i) + "_name|" + albuns.get(i).getNome() + ";";
-            }
-            try {
-                InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                byte[] buffer = mensagem.getBytes();
-                DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
-                socket.send(packet);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
     void criticar_album2() {
         //Vai receber o album que o utilizador quer criticar, a sua mensagem e a cotacao
         ArrayList<Critica> criticas;
         for (Album a : albuns) {
-            if (a.getNome().equals(mensagem.get("item_0_name"))) {//Quando encontra o album na lista de albuns
-                Critica c = new Critica(mensagem.get("review_txt"), Integer.parseInt(mensagem.get("review_avaliacao")));
+            if (a.getNome().equals(mensagem.get("album_name"))) {//Quando encontra o album na lista de albuns
+                Critica c = new Critica(mensagem.get("review_critica"), Integer.parseInt(mensagem.get("review_pontuacao")));
                 criticas = a.getCriticas();
                 criticas.add(c);
                 a.setCriticas(criticas);
@@ -1724,9 +1643,9 @@ class Worker extends Thread {
         }
         try {
             guardarAlbuns(albuns);
-            String mensagem = "type|warning;msg|Critica escrita com sucesso!";
+            String aux = "type|warning;msg|Critica escrita com sucesso!"+";ID|" + mensagem.get("ID");;
             InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-            byte[] buffer = mensagem.getBytes();
+            byte[] buffer = aux.getBytes();
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
             socket.send(packet);
         } catch (IOException e) {
@@ -1813,7 +1732,7 @@ class Worker extends Thread {
 /* Thread que envia o seu id de x em x tempo para o RMI server */
 class Helper extends Thread{
     private String MULTICAST_ADDRESS = "224.0.224.0";
-    private int PORT = 4321;
+    private int PORT = 4322;
     private MulticastSocket socket;
     private int server_id;
 
@@ -1830,7 +1749,7 @@ class Helper extends Thread{
                 byte[] buffer = mensagem.getBytes();
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
                 socket.send(packet);
-                sleep(5000);
+                sleep(10000);
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (InterruptedException e) {
