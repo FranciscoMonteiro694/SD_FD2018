@@ -118,12 +118,6 @@ public class MulticastServer extends Thread implements Serializable {
         albuns = new ArrayList<>();
         socket = null;
         System.out.println(this.getName());
-        //HashMap<String, String> map;
-        leObjetosUtilizadores();
-        leObjetosArtistas();
-        leObjetosMusicas();
-        leObjetosNotificacoes();
-        leObjetosAlbuns();
         String aux;
         try {
             socket = new MulticastSocket(PORT);
@@ -156,7 +150,6 @@ public class MulticastServer extends Thread implements Serializable {
                                 if (users.isEmpty()) { // Se estiver vazio crio como admin
                                     register_admin(map.get("username"), map.get("password"));
                                     //guardar nos ficheiros
-                                    guardarUtilizadores(users);
                                 } else { // Se não estiver vazio
                                     Iterator<User> it = users.iterator();// Cria o iterador
                                     while (it.hasNext()) {
@@ -214,7 +207,6 @@ public class MulticastServer extends Thread implements Serializable {
     public void receber_notificacoes(){
         Notificacao n = new Notificacao(map.get("notification"),map.get("username"));
         notificacoes.add(n);
-        guardarNotificacoes(notificacoes);
     }
     public void make_editor() {
         // Vai verificar se o user em questao tem permissao de admin ou utilizador
@@ -225,7 +217,6 @@ public class MulticastServer extends Thread implements Serializable {
                     if (u.getUsertype().equals("editor") || u.getUsertype().equals("admin")) {//se já tem permissoes
                     } else {//se ainda não tem permissões
                         u.setUsertype("editor");//altera as permissoes
-                        guardarUtilizadores(users);
                     }
                     break;
                 }
@@ -242,7 +233,6 @@ public class MulticastServer extends Thread implements Serializable {
                 a.setData_nasc(d);
                 a.setGenero(map.get("artista_genero"));
                 a.setDescricao(map.get("artista_descricao"));
-                guardarArtistas(artistas);
                 break;//pode nao estar bem
             }
         }
@@ -258,7 +248,6 @@ public class MulticastServer extends Thread implements Serializable {
                 d = new Data(Integer.parseInt(as[0]), Integer.parseInt(as[1]), Integer.parseInt(as[2]));
                 m.setData_lancamento(d);
                 m.setDescricao(map.get("musica_descricao"));
-                guardarMusicas(musicas);
                 break;//pode nao estar bem
             }
         }
@@ -276,7 +265,6 @@ public class MulticastServer extends Thread implements Serializable {
                 if(!a.getPessoas_descricoes().contains(map.get("username"))) {
                     a.getPessoas_descricoes().add(map.get("username"));
                 }
-                guardarAlbuns(albuns);
                 break;//pode nao estar bem
             }
         }
@@ -303,7 +291,6 @@ public class MulticastServer extends Thread implements Serializable {
                 Artista a = new Artista(map.get("album_autor"), lista_albuns);
                 //Criar a lista de albuns
                 artistas.add(a);
-                guardarArtistas(artistas);
             }
             albuns.add(novo);
             // Adicionar o album à lista de albuns do artista
@@ -314,7 +301,6 @@ public class MulticastServer extends Thread implements Serializable {
 
                 }
             }
-            guardarAlbuns(albuns);
         }
     }
 
@@ -334,7 +320,6 @@ public class MulticastServer extends Thread implements Serializable {
             novo = new Artista(map.get("artista_name"), d, map.get("artista_descricao"), map.get("artista_genero"), lista_albuns);
             // Adicionar à lista
             artistas.add(novo);
-            guardarArtistas(artistas);
         }
 
     }
@@ -364,13 +349,11 @@ public class MulticastServer extends Thread implements Serializable {
                 //Vou adicionar o artista
                 Artista a = new Artista(map.get("musica_autor"));
                 artistas.add(a);
-                guardarArtistas(artistas);
             }
             if (verifica_album(map.get("musica_album")) == false) {
                 //Vou adicionar o album
                 Album a = new Album(map.get("musica_album"));
                 albuns.add(a);
-                guardarAlbuns(albuns);
             }
             //Procurar o album na lista de albuns e adicionar a musica
             for (Album a : albuns) {
@@ -380,8 +363,6 @@ public class MulticastServer extends Thread implements Serializable {
                 }
             }
             musicas.add(novo);
-            guardarMusicas(musicas);
-            guardarAlbuns(albuns);
         }
     }
     // Por iterador
@@ -408,7 +389,6 @@ public class MulticastServer extends Thread implements Serializable {
 
             }
         }
-        guardarArtistas(artistas);
     }
 
     public void remover_album() {
@@ -434,7 +414,6 @@ public class MulticastServer extends Thread implements Serializable {
 
             }
         }
-        guardarAlbuns(albuns);
     }
 
     public void remover_musica() {
@@ -460,7 +439,6 @@ public class MulticastServer extends Thread implements Serializable {
 
             }
         }
-        guardarMusicas(musicas);
     }
 
     /* Função que verifica se o artista já se encontra na base de dados */
@@ -514,7 +492,6 @@ public class MulticastServer extends Thread implements Serializable {
         User novo;
         novo = new User(username, password, "admin");
         users.add(novo);
-        guardarUtilizadores(users);
     }
 
     void register(String username, String password) {
@@ -522,208 +499,8 @@ public class MulticastServer extends Thread implements Serializable {
         novo = new User(username, password, "normal");
         //adiciona ao array list de utilizadores
         users.add(novo);
-        guardarUtilizadores(users);
-    }
-    @SuppressWarnings("unchecked")
-    void leObjetosArtistas() {
-        ObjectInputStream ois = null;
-        //Vai tentar ler
-        String filename = "artistas" + Integer.toString(server_id) + ".obj";
-        try {
-            File f = new File(filename);
-            FileInputStream fis = new FileInputStream(f);
-            ois = new ObjectInputStream(fis);
-            if (ois != null) {
-                try {
-                    artistas = (ArrayList<Artista>) ois.readObject();
-                    ois.close();
-                } catch (IOException e) {
-                    System.out.println("Excecao nos artistas "+e);
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
-                }
-            }
-        } catch (FileNotFoundException i) {
-            try {
-                FileOutputStream f = new FileOutputStream(new File(filename));
-            } catch (IOException e) {
-                System.out.println("Ocorreu aqui1: " + e);
-            }
-        } catch (IOException e) {
-        }
-    }
-    @SuppressWarnings("unchecked")
-    void leObjetosMusicas() {
-        ObjectInputStream ois = null;
-        //Vai tentar ler
-        String filename = "musicas" + Integer.toString(server_id) + ".obj";
-        try {
-            File f = new File(filename);
-            FileInputStream fis = new FileInputStream(f);
-            ois = new ObjectInputStream(fis);
-            if (ois != null) {
-                try {
-                    musicas = (ArrayList<Musica>) ois.readObject();
-                    ois.close();
-                } catch (IOException e) {
-                    System.out.println("Excecao nas musicas "+e);
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
-                }
-            }
-        } catch (FileNotFoundException i) {
-            try {
-                FileOutputStream f = new FileOutputStream(new File(filename));
-            } catch (IOException e) {
-                System.out.println("Ocorreu aqui1: " + e);
-            }
-        } catch (IOException e) {
-            //System.out.println("Ocorreu aqui2: " +e); // Está a dar exceção aqui
-        }
-    }
-    @SuppressWarnings("unchecked")
-    void leObjetosNotificacoes() {
-        ObjectInputStream ois = null;
-        //Vai tentar ler
-        String filename = "notificacoes" + Integer.toString(server_id) + ".obj";
-        try {
-            File f = new File(filename);
-            FileInputStream fis = new FileInputStream(f);
-            ois = new ObjectInputStream(fis);
-            if (ois != null) {
-                try {
-                    notificacoes = (ArrayList<Notificacao>) ois.readObject();
-                    ois.close();
-                } catch (IOException e) {
-                    System.out.println("Excecao nos notificacoes"+e);
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
-                }
-            }
-        } catch (FileNotFoundException i) {
-            try {
-                FileOutputStream f = new FileOutputStream(new File(filename));
-            } catch (IOException e) {
-                System.out.println("Ocorreu aqui1: " + e);
-            }
-        } catch (IOException e) {
-            //System.out.println("Ocorreu aqui2: " +e); // Está a dar exceção aqui
-        }
-    }
-    @SuppressWarnings("unchecked")
-    void leObjetosUtilizadores() {
-        ObjectInputStream ois = null;
-        //Vai tentar ler
-        String filename = "utilizadores" + Integer.toString(server_id) + ".obj";
-        try {
-            File f = new File(filename);
-            FileInputStream fis = new FileInputStream(f);
-            ois = new ObjectInputStream(fis);
-            if (ois != null) {
-                try {
-                    users = (ArrayList<User>) ois.readObject();
-                    ois.close();
-                } catch (IOException e) {
-                    System.out.println("Excecao nos utilizadores "+e);
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
-                }
-            }
-        } catch (FileNotFoundException i) {
-            try {
-                FileOutputStream f = new FileOutputStream(new File(filename));
-            } catch (IOException e) {
-                System.out.println("Ocorreu aqui1: " + e);
-            }
-        } catch (IOException e) {
-            //System.out.println("Ocorreu aqui2: " +e); // Está a dar exceção aqui
-        }
-
-
-    }
-    @SuppressWarnings("unchecked")
-    void leObjetosAlbuns() {
-        ObjectInputStream ois = null;
-        //Vai tentar ler
-        String filename = "albuns" + Integer.toString(server_id) + ".obj";
-        try {
-            File f = new File(filename);
-            FileInputStream fis = new FileInputStream(f);
-            ois = new ObjectInputStream(fis);
-            if (ois != null) {
-                try {
-                    albuns = (ArrayList<Album>) ois.readObject();
-                    ois.close();
-                } catch (IOException e) {
-                    System.out.println("Excecao nos albuns "+e);
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
-                }
-            }
-        } catch (FileNotFoundException i) {
-            try {
-                FileOutputStream f = new FileOutputStream(new File(filename));
-            } catch (IOException e) {
-                System.out.println("Ocorreu aqui1: " + e);
-            }
-        } catch (IOException e) {
-        }
     }
 
-    public void guardarAlbuns(ArrayList<Album> a) {
-        try {
-            String filename = "albuns" + Integer.toString(server_id) + ".obj";
-            ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(filename));
-            os.writeObject(a);
-            os.close();
-        } catch (IOException e) {
-            System.out.printf("Ocorreu a exceçao %s ao escrever no ficheiro de objetos dos albuns.\n", e);
-        }
-    }
-
-    public void guardarUtilizadores(ArrayList<User> u) {
-        try {
-            String filename = "utilizadores" + Integer.toString(server_id) + ".obj";
-            ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(filename));
-            os.writeObject(u);
-            os.close();
-        } catch (IOException e) {
-            System.out.printf("Ocorreu a exceçao %s ao escrever no ficheiro de objetos dos utilizadores.\n", e);
-        }
-    }
-
-    public void guardarArtistas(ArrayList<Artista> a) {
-        try {
-            String filename = "artistas" + Integer.toString(server_id) + ".obj";
-            ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(filename));
-            os.writeObject(a);
-            os.close();
-        } catch (IOException e) {
-            System.out.printf("Ocorreu a exceçao %s ao escrever no ficheiro de objetos dos artistas.\n", e);
-        }
-    }
-
-    public void guardarNotificacoes(ArrayList<Notificacao> n) {
-        try {
-            String filename = "notificacoes" + Integer.toString(server_id) + ".obj";
-            ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(filename));
-            os.writeObject(n);
-            os.close();
-        } catch (IOException e) {
-            System.out.printf("Ocorreu a exceçao %s ao escrever no ficheiro de objetos das notificacoes.\n", e);
-        }
-    }
-
-    public void guardarMusicas(ArrayList<Musica> m) {
-        try {
-            String filename = "musicas" + Integer.toString(server_id) + ".obj";
-            ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(filename));
-            os.writeObject(m);
-            os.close();
-        } catch (IOException e) {
-            System.out.printf("Ocorreu a exceçao %s ao escrever no ficheiro de objetos dos musicas.\n", e);
-        }
-    }
     void criticar_album2() {
         //Vai receber o album que o utilizador quer criticar, a sua mensagem e a cotacao
         ArrayList<Critica> criticas;
@@ -735,7 +512,6 @@ public class MulticastServer extends Thread implements Serializable {
                 a.setCriticas(criticas);
             }
         }
-        guardarAlbuns(albuns);
     }
 }
 
@@ -1214,7 +990,6 @@ class Worker extends Thread {
                 break;//pode nao estar bem
             }
         }
-
     }
 
     public void editar_musica() {
