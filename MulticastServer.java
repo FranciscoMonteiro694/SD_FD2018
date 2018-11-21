@@ -1,9 +1,9 @@
 import java.io.Serializable;
-import java.net.MulticastSocket;
-import java.net.DatagramPacket;
-import java.net.InetAddress;
+import java.net.*;
 import java.io.IOException;
 import java.lang.*;
+import java.sql.*;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.io.File;
@@ -14,8 +14,10 @@ import java.io.FileOutputStream;
 import java.util.Iterator;
 import java.io.FileNotFoundException;
 
+
 public class MulticastServer extends Thread implements Serializable {
     private static int server_id;
+    private static int TCPPort;
     private String MULTICAST_ADDRESS = "224.0.224.0";
     private int PORT = 4321;
     private ArrayList<User> users;//Lista de utilizadores
@@ -25,13 +27,82 @@ public class MulticastServer extends Thread implements Serializable {
     private ArrayList<Notificacao> notificacoes;//Lista de notificacoes
     private HashMap<String, String> map;
     private MulticastSocket socket;
+    private ServerSocket socketTCP;
+    private Socket socketClient; //Socket para dar o accept
     static final long serialVersionUID = 42L;// Para resolver warning
+    private final String url = "jdbc:postgresql://localhost:5432/postgres";
+    private final String user = "postgres";
+    private final String password = "admin";
 
 
+    public Connection connect() {
+        Connection conn = null;
+        try {
+            conn = DriverManager.getConnection(url, user, password);
+            System.out.println("Conectado à base de dados com sucesso!");
+        } catch (SQLException e) {
+            System.out.println("Ligação com a base de dados falhada!");
+        }
+
+        return conn;
+    }
+
+    public Connection testConnection() {
+        Connection conn = null;
+        try {
+            conn = DriverManager.getConnection(url, user, password);
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+            System.out.println("Ligação com a base de dados falhada!");
+        }
+
+        return conn;
+    }
+    /* Para inserir artistas na BD */
+
+    public void insertArtista(Artista a1) {
+        String SQL = "INSERT INTO artista(nome,genero,descricao,data) "
+                + "VALUES(?,?,?,?)";
+        //long id = 0;
+
+        try (Connection conn = testConnection();
+             PreparedStatement pstmt = conn.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS)) {
+
+            pstmt.setString(1, a1.getNome());
+            pstmt.setString(2, a1.getGenero());
+            pstmt.setString(3, a1.getDescricao());
+            pstmt.setDate(4,new Date(a1.getData_nasc().getAno(),a1.getData_nasc().getMes(),a1.getData_nasc().getDia()));
+            pstmt.executeUpdate();
+
+            // int affectedRows = pstmt.executeUpdate();
+
+            /*
+            // check the affected rows
+            if (affectedRows > 0) {
+                // get the ID back
+                try (ResultSet rs = pstmt.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        id = rs.getLong(1);
+                    }
+                } catch (SQLException ex) {
+                    System.out.println(ex.getMessage());
+                }
+            }
+            */
+        } catch (SQLException ex) {
+            System.out.println(ex.getMessage());
+        }
+    }
     public static void main(String[] args) { //meter um id do servidor
         String teste = args[0];
+        String teste1 = args[1];
         server_id = Integer.parseInt(teste);
+        TCPPort= Integer.parseInt(teste1);
         MulticastServer server = new MulticastServer();
+        server.connect();
+        Data d = new Data(1,5,1998);
+        Artista funfa = new Artista("teste1", d,"Esta merda funcionou", "Rock");
+        server.insertArtista(funfa);
         server.start();
     }
 
@@ -56,6 +127,7 @@ public class MulticastServer extends Thread implements Serializable {
         String aux;
         try {
             socket = new MulticastSocket(PORT);
+            socketTCP = new ServerSocket(TCPPort);
             Helper h = new Helper(server_id,socket);
             h.start();
             InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
@@ -73,7 +145,7 @@ public class MulticastServer extends Thread implements Serializable {
                 if (map.containsKey("mserverid")) {
                     id = Integer.parseInt(map.get("mserverid"));
                     if (id == server_id) {
-                        Worker thread = new Worker(map, socket, users, server_id, musicas, artistas, albuns, notificacoes);
+                        Worker thread = new Worker(map, socket, users, server_id, musicas, artistas, albuns, notificacoes,TCPPort,socketTCP);
                         thread.start();
                     } else {//tratar das cenas de registers e assim, talvez fazer um switch aqui dentro, sem mandar mensagens
                         switch (map.get("type")) {
@@ -375,7 +447,7 @@ public class MulticastServer extends Thread implements Serializable {
                     musicas.remove(m);
                     try {
                         InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                        String aux = map.get("username") + ";remove_musica_try|sucess;" + "type|warning" + ";ID|" + map.get("ID");
+                        String aux = map.get("username") + "remove_musica_try|sucess;" + "type|warning" + ";ID|" + map.get("ID");
                         String mensagem = "username|" + aux;
                         byte[] buffer = mensagem.getBytes();
                         DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
@@ -383,7 +455,7 @@ public class MulticastServer extends Thread implements Serializable {
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                    break;// está aqui bem?
+                    break;
                 }
 
             }
@@ -478,7 +550,6 @@ public class MulticastServer extends Thread implements Serializable {
                 System.out.println("Ocorreu aqui1: " + e);
             }
         } catch (IOException e) {
-            //System.out.println("Ocorreu aqui2: " +e); // Está a dar exceção aqui
         }
     }
     @SuppressWarnings("unchecked")
@@ -596,7 +667,6 @@ public class MulticastServer extends Thread implements Serializable {
                 System.out.println("Ocorreu aqui1: " + e);
             }
         } catch (IOException e) {
-            //System.out.println("Ocorreu aqui2: " +e);
         }
     }
 
@@ -669,7 +739,6 @@ public class MulticastServer extends Thread implements Serializable {
     }
 }
 
-//Vou ter de pegar no pacote que receber, vou ao protocolo e vou buscar o id do servidor que vai responder
 class Worker extends Thread {
     private int server_id;
     private String MULTICAST_ADDRESS = "224.0.224.0";
@@ -679,12 +748,15 @@ class Worker extends Thread {
     private ArrayList<Artista> artistas;//Lista de artistas, (um artista pode ser um grupo)
     private ArrayList<Album> albuns;//Lista de albuns
     private ArrayList<Notificacao> notificacoes;//Lista de notificacoes
+    private int TCPPort;
+
 
     private HashMap<String, String> mensagem;
 
     private MulticastSocket socket;
+    private ServerSocket socketTCP;
 
-    Worker(HashMap<String, String> mensagem, MulticastSocket socket, ArrayList<User> users, int server_id, ArrayList<Musica> musicas, ArrayList<Artista> artistas, ArrayList<Album> albuns, ArrayList<Notificacao> notificacoes) {//recebe a mensagem como pedido
+    Worker(HashMap<String, String> mensagem, MulticastSocket socket, ArrayList<User> users, int server_id, ArrayList<Musica> musicas, ArrayList<Artista> artistas, ArrayList<Album> albuns, ArrayList<Notificacao> notificacoes,int TCPPort,ServerSocket socketTCP) {//recebe a mensagem como pedido
         this.mensagem = mensagem;
         this.socket = socket;
         this.users = users;
@@ -693,6 +765,8 @@ class Worker extends Thread {
         this.artistas = artistas;
         this.musicas = musicas;
         this.server_id = server_id;
+        this.TCPPort=TCPPort;
+        this.socketTCP=socketTCP;
     }
 
     public void run() {
@@ -742,7 +816,7 @@ class Worker extends Thread {
                     }
                 }
                 break;
-            case "register"://para registar, tambem vai ter de ser feito nos outros servidores
+            case "register":
                 int flag=0;
                 //verificar se o nome já está na base de dados
                 //se estiver
@@ -762,7 +836,6 @@ class Worker extends Thread {
                     }
                 } else { // Se não estiver vazio
                     Iterator<User> it = users.iterator();// Cria o iterador
-                    // Este iterador pode estar mal, a função original está na secretaria
                     while (it.hasNext()) {//Está a dar concurrentModificationException, usar iterator
                         User u = it.next();
                         if (u.getUsername().equals(mensagem.get("username"))) {//se existir, enviar mensagem a dizer que falhou
@@ -857,7 +930,52 @@ class Worker extends Thread {
             case "new_notification":
                 receber_notificacoes();
                 break;
+            case "upload_music":
+                upload_music();
+                break;
         }
+    }
+    // É possível a cada utilizador dar upload de uma música que ficará associado a uma música específica
+    // Inicialmente fica restrita à conta do próprio utilizador
+    public void upload_music(){
+        // Verificar se a música já existe
+        // Se já existir
+        String aux;
+        if (verifica_musica(mensagem.get("musica_name")) == true){
+            // Vai ter de enviar o IP da máquina e a porta
+            try {
+                InetAddress localhost = InetAddress.getLocalHost();
+                String filename=mensagem.get("musica_name");
+                InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+                aux = ";ID|" + mensagem.get("ID");
+                String mensagem = "type|tcp_info;ip_server|" +localhost.getHostAddress()+";port_server|"+Integer.toString(TCPPort)+ aux;
+                byte[] buffer = mensagem.getBytes();
+                DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+                socket.send(packet);
+                // Criar a thread para tratar da ligação
+                ConnectionTCP c;
+                c= new ConnectionTCP(socketTCP,filename);
+                c.start();
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        // Se não existir, enviar mensagem a dizer para o utilizador criar a música
+        else{
+            try {
+                InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+                aux = ";ID|" + mensagem.get("ID");
+                String mensagem = "type|warning;msg|Esta música não existe na base de dados, tem de criar a música primeiro" + aux;
+                byte[] buffer = mensagem.getBytes();
+                DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+                socket.send(packet);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+
     }
     // Função que vai receber as notificações e as vai adicionar ao array de notificações
     public void receber_notificacoes(){
@@ -903,7 +1021,7 @@ class Worker extends Thread {
         for (Critica c : criticas) {
             acum += c.getAvaliacao();
         }
-        return (double)acum / criticas.size();
+        return (double)(acum / criticas.size());
 
     }
 
@@ -1451,7 +1569,7 @@ class Worker extends Thread {
         } else {
             try {
                 InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                String aux = mensagem.get("username") + ";remove_album_try|failed;" + "type|warning" + ";ID|" + mensagem.get("ID");
+                String aux = mensagem.get("username") + "remove_album_try|failed;" + "type|warning" + ";ID|" + mensagem.get("ID");
                 String mensagem = "username|" + aux;
                 byte[] buffer = mensagem.getBytes();
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
@@ -1474,7 +1592,7 @@ class Worker extends Thread {
                     musicas.remove(m);
                     try {
                         InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                        String aux = mensagem.get("username") + ";remove_musica_try|sucess;" + "type|warning" + ";ID|" + mensagem.get("ID");
+                        String aux = mensagem.get("username") + "remove_musica_try|sucess;" + "type|warning" + ";ID|" + mensagem.get("ID");
                         String mensagem = "username|" + aux;
                         byte[] buffer = mensagem.getBytes();
                         DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
@@ -1489,7 +1607,7 @@ class Worker extends Thread {
         } else {
             try {
                 InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                String aux = mensagem.get("username") + ";remove_musica_try|failed;" + "type|warning" + ";ID|" + mensagem.get("ID");
+                String aux = mensagem.get("username") + "remove_musica_try|failed;" + "type|warning" + ";ID|" + mensagem.get("ID");
                 String mensagem = "username|" + aux;
                 byte[] buffer = mensagem.getBytes();
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
