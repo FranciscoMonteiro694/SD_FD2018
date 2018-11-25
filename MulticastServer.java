@@ -3,16 +3,9 @@ import java.net.*;
 import java.io.IOException;
 import java.lang.*;
 import java.sql.*;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.ArrayList;
-import java.io.File;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.util.Iterator;
-import java.io.FileNotFoundException;
 
 
 public class MulticastServer extends Thread implements Serializable {
@@ -20,11 +13,6 @@ public class MulticastServer extends Thread implements Serializable {
     private static int TCPPort;
     private String MULTICAST_ADDRESS = "224.0.224.0";
     private int PORT = 4321;
-    private ArrayList<User> users;//Lista de utilizadores
-    private ArrayList<Musica> musicas;//Lista de musicas
-    private ArrayList<Musico> Musicos;//Lista de Musicos, (um Musico pode ser um grupo)
-    private ArrayList<Album> albuns;//Lista de albuns
-    private ArrayList<Notificacao> notificacoes;//Lista de notificacoes
     private HashMap<String, String> map;
     private MulticastSocket socket;
     private ServerSocket socketTCP;
@@ -33,31 +21,33 @@ public class MulticastServer extends Thread implements Serializable {
     private final String url = "jdbc:postgresql://localhost:5432/postgres";
     private final String user = "postgres";
     private final String password = "admin";
+    private Connection conectBD;
 
 
     public Connection connect() {
-        Connection conn = null;
+        Connection conectBD = null;
         try {
-            conn = DriverManager.getConnection(url, user, password);
+            conectBD = DriverManager.getConnection(url, user, password);
             System.out.println("Conectado à base de dados com sucesso!");
         } catch (SQLException e) {
             System.out.println("Ligação com a base de dados falhada!");
         }
 
-        return conn;
+        return conectBD;
     }
 
     public Connection testConnection() {
-        Connection conn = null;
+        Connection conectBD = null;
         try {
-            conn = DriverManager.getConnection(url, user, password);
+            conectBD = DriverManager.getConnection(url, user, password);
         } catch (SQLException e) {
             System.out.println(e.getMessage());
             System.out.println("Ligação com a base de dados perdida!");
         }
 
-        return conn;
+        return conectBD;
     }
+
     public int findID(String nome) {
         String SQL = "SELECT idartista, "
                 + "FROM artista "
@@ -75,7 +65,8 @@ public class MulticastServer extends Thread implements Serializable {
         }
         return 0;
     }
-    public void testefuncao(String nome,int id_grupo) {
+
+    public void testefuncao(String nome, int id_grupo) {
         /*
         INSERT INTO bar (description, foo_id) VALUES
                 ( 'testing',     (SELECT id from foo WHERE type='blue') ),
@@ -89,7 +80,7 @@ public class MulticastServer extends Thread implements Serializable {
              PreparedStatement pstmt = conn.prepareStatement(SQL)) {
 
             pstmt.setInt(1, id_grupo);
-            pstmt.setString(2,nome);
+            pstmt.setString(2, nome);
             pstmt.executeUpdate();
         } catch (SQLException ex) {
             System.out.println(ex.getMessage());
@@ -103,12 +94,12 @@ public class MulticastServer extends Thread implements Serializable {
         int id = 0;// Era long, pode dar problemas em ser int
 
         try (Connection conn = testConnection();
-             PreparedStatement pstmt = conn.prepareStatement(SQL,Statement.RETURN_GENERATED_KEYS) ){
+             PreparedStatement pstmt = conn.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS)) {
 
             pstmt.setString(1, m1.getNome());
             pstmt.setString(2, m1.getGenero());
             pstmt.setString(3, m1.getDescricao());
-            pstmt.setDate(4,new Date(m1.getData_criacao().getAno(),m1.getData_criacao().getMes(),m1.getData_criacao().getDia()));
+            pstmt.setDate(4, new Date(m1.getData_criacao().getAno(), m1.getData_criacao().getMes(), m1.getData_criacao().getDia()));
 
             int affectedRows = pstmt.executeUpdate();
 
@@ -119,8 +110,8 @@ public class MulticastServer extends Thread implements Serializable {
                 try (ResultSet rs = pstmt.getGeneratedKeys()) {
                     if (rs.next()) {
                         id = rs.getInt(5);
-                        System.out.println("Estou a imprimir o ID:"+ id);
-                        insertMusico(m1,id);
+                        System.out.println("Estou a imprimir o ID:" + id);
+                        insertMusico(m1, id);
                     }
                 } catch (SQLException ex) {
                     System.out.println(ex.getMessage());
@@ -131,15 +122,15 @@ public class MulticastServer extends Thread implements Serializable {
         }
     }
 
-    public void insertMusico(Musico m1,int id){
+    public void insertMusico(Musico m1, int id) {
         String SQL = "INSERT INTO musico(datanascimento,artista_idartista) "
                 + "VALUES(?,?)";
 
         try (Connection conn = testConnection();
-             PreparedStatement pstmt = conn.prepareStatement(SQL) ){
+             PreparedStatement pstmt = conn.prepareStatement(SQL)) {
 
-            pstmt.setDate(1, new Date(m1.getDataNascimento().getAno(),m1.getDataNascimento().getMes(),m1.getDataNascimento().getDia()));
-            pstmt.setInt(2,id);
+            pstmt.setDate(1, new Date(m1.getDataNascimento().getAno(), m1.getDataNascimento().getMes(), m1.getDataNascimento().getDia()));
+            pstmt.setInt(2, id);
             pstmt.executeUpdate();
 
 
@@ -147,6 +138,7 @@ public class MulticastServer extends Thread implements Serializable {
             System.out.println(ex.getMessage());
         }
     }
+
     /* Funções para inserir um Grupo na BD */
     public void insertArtista(Grupo g1) {
         String SQL = "INSERT INTO artista(nome,genero,descricao,data) "
@@ -154,12 +146,12 @@ public class MulticastServer extends Thread implements Serializable {
         int id = 0;
 
         try (Connection conn = testConnection();
-             PreparedStatement pstmt = conn.prepareStatement(SQL,Statement.RETURN_GENERATED_KEYS) ){
+             PreparedStatement pstmt = conn.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS)) {
 
             pstmt.setString(1, g1.getNome());
             pstmt.setString(2, g1.getGenero());
             pstmt.setString(3, g1.getDescricao());
-            pstmt.setDate(4,new Date(g1.getData_criacao().getAno(),g1.getData_criacao().getMes(),g1.getData_criacao().getDia()));
+            pstmt.setDate(4, new Date(g1.getData_criacao().getAno(), g1.getData_criacao().getMes(), g1.getData_criacao().getDia()));
 
             int affectedRows = pstmt.executeUpdate();
 
@@ -170,9 +162,9 @@ public class MulticastServer extends Thread implements Serializable {
                 try (ResultSet rs = pstmt.getGeneratedKeys()) {
                     if (rs.next()) {
                         id = rs.getInt(5);
-                        insertGrupo(g1,id);
-                        for(String s : g1.getConstituintes()){
-                            testefuncao(s,id);
+                        insertGrupo(g1, id);
+                        for (String s : g1.getConstituintes()) {
+                            testefuncao(s, id);
                         }
                     }
                 } catch (SQLException ex) {
@@ -183,14 +175,15 @@ public class MulticastServer extends Thread implements Serializable {
             System.out.println(ex.getMessage());
         }
     }
-    public void insertGrupo(Grupo g1,int id){
+
+    public void insertGrupo(Grupo g1, int id) {
         String SQL = "INSERT INTO grupo(artista_idartista) "
                 + "VALUES(?)";
 
         try (Connection conn = testConnection();
-             PreparedStatement pstmt = conn.prepareStatement(SQL) ){
+             PreparedStatement pstmt = conn.prepareStatement(SQL)) {
 
-            pstmt.setInt( 1,id);
+            pstmt.setInt(1, id);
             pstmt.executeUpdate();
 
 
@@ -198,17 +191,18 @@ public class MulticastServer extends Thread implements Serializable {
             System.out.println(ex.getMessage());
         }
     }
+
     public static void main(String[] args) { //meter um id do servidor
         String teste = args[0];
         String teste1 = args[1];
         server_id = Integer.parseInt(teste);
-        TCPPort= Integer.parseInt(teste1);
+        TCPPort = Integer.parseInt(teste1);
         MulticastServer server = new MulticastServer();
         server.connect();
-        Musico funfa = new Musico("MusicoNormal1", new Data(1,5,1998),"Esta merda funcionou", "Rock",new Data(11,05,2018));
-        Musico funfa2 = new Musico("MusicoNormal2", new Data(1,5,1998),"Esta merda funcionou", "Rock",new Data(11,05,2018));
-        Grupo testeGrupo = new Grupo("testeGrupo2", new Data(1,5,1998),"Podemos avançar", "Funk");
-        ArrayList <String> auxiliar = new ArrayList<>();
+        Musico funfa = new Musico("MusicoNormal1", new Data(1, 5, 1998), "Esta merda funcionou", "Rock", new Data(11, 05, 2018));
+        Musico funfa2 = new Musico("MusicoNormal2", new Data(1, 5, 1998), "Esta merda funcionou", "Rock", new Data(11, 05, 2018));
+        Grupo testeGrupo = new Grupo("testeGrupo2", new Data(1, 5, 1998), "Podemos avançar", "Funk");
+        ArrayList<String> auxiliar = new ArrayList<>();
         server.insertArtista(funfa);
         server.insertArtista(funfa2);
         auxiliar.add("MusicoNormal1");
@@ -223,18 +217,13 @@ public class MulticastServer extends Thread implements Serializable {
     }
 
     public void run() {
-        users = new ArrayList<>();
-        Musicos = new ArrayList<>();
-        notificacoes = new ArrayList<>();
-        musicas = new ArrayList<>();
-        albuns = new ArrayList<>();
         socket = null;
         System.out.println(this.getName());
         String aux;
         try {
             socket = new MulticastSocket(PORT);
             socketTCP = new ServerSocket(TCPPort);
-            Helper h = new Helper(server_id,socket);
+            Helper h = new Helper(server_id, socket);
             h.start();
             InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
             socket.joinGroup(group);
@@ -251,12 +240,12 @@ public class MulticastServer extends Thread implements Serializable {
                 if (map.containsKey("mserverid")) {
                     id = Integer.parseInt(map.get("mserverid"));
                     if (id == server_id) {
-                        Worker thread = new Worker(map, socket, users, server_id, musicas, Musicos, albuns, notificacoes,TCPPort,socketTCP);
+                        Worker thread = new Worker(map, socket, server_id, TCPPort, socketTCP, conectBD);
                         thread.start();
                     } else {//tratar das cenas de registers e assim, talvez fazer um switch aqui dentro, sem mandar mensagens
                         switch (map.get("type")) {
                             case "register"://para registar, tambem vai ter de ser feito nos outros servidores
-                                int flag=0;
+                                int flag = 0;
                                 //verificar se o nome já está na base de dados
                                 //se estiver
                                 if (users.isEmpty()) { // Se estiver vazio crio como admin
@@ -267,11 +256,11 @@ public class MulticastServer extends Thread implements Serializable {
                                     while (it.hasNext()) {
                                         User u = it.next();
                                         if (u.getUsername().equals(map.get("username"))) {//se existir, enviar mensagem a dizer que falhou
-                                            flag=1;
+                                            flag = 1;
                                         }
 
                                     }
-                                    if(flag==0) {
+                                    if (flag == 0) {
                                         register(map.get("username"), map.get("password"));
                                     }
                                 }
@@ -316,10 +305,12 @@ public class MulticastServer extends Thread implements Serializable {
 
 
     }
-    public void receber_notificacoes(){
-        Notificacao n = new Notificacao(map.get("notification"),map.get("username"));
+
+    public void receber_notificacoes() {
+        Notificacao n = new Notificacao(map.get("notification"), map.get("username"));
         notificacoes.add(n);
     }
+
     public void make_editor() {
         // Vai verificar se o user em questao tem permissao de admin ou utilizador
         if (tipoUser(map.get("username")).equals("admin") || tipoUser(map.get("username")).equals("editor")) {
@@ -335,6 +326,7 @@ public class MulticastServer extends Thread implements Serializable {
             }
         }
     }
+
     public void editar_Musico() {
         for (Musico a : Musicos) {
             if (a.getNome().equals(map.get("Musico_name"))) {//Quando encontra o Musico na lista
@@ -374,7 +366,7 @@ public class MulticastServer extends Thread implements Serializable {
                 d = new Data(Integer.parseInt(as[0]), Integer.parseInt(as[1]), Integer.parseInt(as[2]));
                 a.setData_lancamento(d);
                 a.setDescricao(map.get("album_descricao"));
-                if(!a.getPessoas_descricoes().contains(map.get("username"))) {
+                if (!a.getPessoas_descricoes().contains(map.get("username"))) {
                     a.getPessoas_descricoes().add(map.get("username"));
                 }
                 break;//pode nao estar bem
@@ -421,7 +413,7 @@ public class MulticastServer extends Thread implements Serializable {
     /* Funções para gerir os detalhes de cada lista */
     /* Só os editores e o admin é que o podem fazer */
     /* O acesso a estas funções já está protegido pelo RMI Client */
-    /*
+
     public void inserir_Musico() {
         // Se não existir, vai criar
         if (verifica_Musico(map.get("Musico_name")) == false) {
@@ -432,13 +424,14 @@ public class MulticastServer extends Thread implements Serializable {
             d = new Data(Integer.parseInt(as[0]), Integer.parseInt(as[1]), Integer.parseInt(as[2]));
             Musico novo;
             ArrayList<Album> lista_albuns = new ArrayList<>();
-            novo = new Musico(map.get("Musico_name"), d, map.get("Musico_descricao"), map.get("Musico_genero"), lista_albuns);
+            insertArtista(new Musico(map.get("Musico_name"), d, map.get("Musico_descricao"), map.get("Musico_genero")));
+            //novo = new Musico(map.get("Musico_name"), d, map.get("Musico_descricao"), map.get("Musico_genero"), lista_albuns);
             // Adicionar à lista
-            Musicos.add(novo);
+            //Musicos.add(novo);
         }
 
     }
-    */
+
     public String tipoUser(String utilizador) {
         for (User u : users) {
             if (u.getUsername().equals(utilizador)) {
@@ -451,7 +444,7 @@ public class MulticastServer extends Thread implements Serializable {
     public void inserir_musica() {
         // Vai verificar se a musica já existe na base de dados
         // Se já existe
-        if (verifica_musica(map.get("musica_name")) == false){
+        if (verifica_musica(map.get("musica_name")) == false) {
             // Criar a nova musica
             Data d;
             String[] as;
@@ -481,6 +474,7 @@ public class MulticastServer extends Thread implements Serializable {
             musicas.add(novo);
         }
     }
+
     // Por iterador
     public void remover_Musico() {
         //Verificar se o Musico está na lista
@@ -635,12 +629,11 @@ class Worker extends Thread {
     private int server_id;
     private String MULTICAST_ADDRESS = "224.0.224.0";
     private int PORT = 4321;
-    private ArrayList<User> users;//Lista de utilizadores
-    private ArrayList<Musica> musicas;//Lista de musicas
-    private ArrayList<Musico> Musicos;//Lista de Musicos, (um Musico pode ser um grupo)
-    private ArrayList<Album> albuns;//Lista de albuns
-    private ArrayList<Notificacao> notificacoes;//Lista de notificacoes
     private int TCPPort;
+    private Connection connectBD;
+    private final String url = "jdbc:postgresql://localhost:5432/postgres";
+    private final String user = "postgres";
+    private final String password = "admin";
 
 
     private HashMap<String, String> mensagem;
@@ -648,17 +641,13 @@ class Worker extends Thread {
     private MulticastSocket socket;
     private ServerSocket socketTCP;
 
-    Worker(HashMap<String, String> mensagem, MulticastSocket socket, ArrayList<User> users, int server_id, ArrayList<Musica> musicas, ArrayList<Musico> Musicos, ArrayList<Album> albuns, ArrayList<Notificacao> notificacoes,int TCPPort,ServerSocket socketTCP) {//recebe a mensagem como pedido
+    Worker(HashMap<String, String> mensagem, MulticastSocket socket, int server_id, int TCPPort, ServerSocket socketTCP, Connection conectBD) {//recebe a mensagem como pedido
         this.mensagem = mensagem;
         this.socket = socket;
-        this.users = users;
-        this.notificacoes = notificacoes;
-        this.albuns = albuns;
-        this.Musicos = Musicos;
-        this.musicas = musicas;
         this.server_id = server_id;
-        this.TCPPort=TCPPort;
-        this.socketTCP=socketTCP;
+        this.TCPPort = TCPPort;
+        this.socketTCP = socketTCP;
+        this.connectBD = conectBD;
     }
 
     public void run() {
@@ -668,18 +657,11 @@ class Worker extends Thread {
         switch (mensagem.get("type")) {
             case "login"://para dar login
                 String[] logins_bd = new String[2];//para// os logins em causa da base de dados e comparar com os da mensagem
-                logins_bd[0]="";
-                logins_bd[1]="";
-                //Vou pegar no username e na password da mensagem e vou ver se está na base de dados
-                for (User u : users) {
-                    if (u.getUsername().equals(mensagem.get("username"))) {
-                        logins_bd[0] = u.getUsername();
-                        logins_bd[1] = u.getPassword();
-                    }
-                }
+                logins_bd[0] = "";
+                logins_bd[1] = "";
                 // Se estiver, responder com uma mensagem a dizer que foi logado com sucesso
                 // Mandar também as notificações do user
-                if (logins_bd[0].equals(mensagem.get("username")) && logins_bd[1].equals(mensagem.get("password"))) {
+                if (verificaLogin(mensagem.get("username"),mensagem.get("password"))) {
                     try {
                         InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
                         aux = ";ID|" + mensagem.get("ID");
@@ -709,11 +691,10 @@ class Worker extends Thread {
                 }
                 break;
             case "register":
-                int flag=0;
                 //verificar se o nome já está na base de dados
                 //se estiver
-                if (users.isEmpty() == true) { // Se estiver vazio crio como admin
-                    register_admin(mensagem.get("username"), mensagem.get("password"));
+                if (containsUsers() == false) { // Se estiver vazio crio como admin
+                    insertUser(new User(mensagem.get("username"), mensagem.get("password"), "admin"));
                     //guardar nos ficheiros
                     try {
                         InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
@@ -726,27 +707,22 @@ class Worker extends Thread {
                         e.printStackTrace();
                     }
                 } else { // Se não estiver vazio
-                    Iterator<User> it = users.iterator();// Cria o iterador
-                    while (it.hasNext()) {//Está a dar concurrentModificationException, usar iterator
-                        User u = it.next();
-                        if (u.getUsername().equals(mensagem.get("username"))) {//se existir, enviar mensagem a dizer que falhou
-                            try {
-                                InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                                aux = ";ID|" + mensagem.get("ID");
-                                String mensagem = "regist_try|failed" + aux;
-                                byte[] buffer = mensagem.getBytes();
-                                DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
-                                socket.send(packet);
-                                flag=1;
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                            break;
+                    //Verificar se o utilizador existe
+                    //Está a dar concurrentModificationException, usar iterator
+                    if (verificaUser(mensagem.get("username"))) {//se existir, enviar mensagem a dizer que falhou
+                        try {
+                            InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+                            aux = ";ID|" + mensagem.get("ID");
+                            String mensagem = "regist_try|failed" + aux;
+                            byte[] buffer = mensagem.getBytes();
+                            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+                            socket.send(packet);
+                        } catch (IOException e) {
+                            e.printStackTrace();
                         }
-
-                    }
-                    if(flag==0) {
-                        register(mensagem.get("username"), mensagem.get("password"));
+                        break;
+                    }else {
+                        insertUser(new User(mensagem.get("username"), mensagem.get("password"), "normal"));
                         try {
                             InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
                             aux = ";ID|" + mensagem.get("ID");
@@ -825,26 +801,219 @@ class Worker extends Thread {
                 break;
         }
     }
+
+    public Connection connect() {
+        Connection conectBD = null;
+        try {
+            conectBD = DriverManager.getConnection(url, user, password);
+            System.out.println("Conectado à base de dados com sucesso!");
+        } catch (SQLException e) {
+            System.out.println("Ligação com a base de dados falhada!");
+        }
+
+        return conectBD;
+    }
+
+    public Connection testConnection() {
+        Connection conectBD = null;
+        try {
+            conectBD = DriverManager.getConnection(url, user, password);
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+            System.out.println("Ligação com a base de dados perdida!");
+        }
+
+        return conectBD;
+    }
+
+    public boolean containsUsers() {
+        String SQL = "SELECT COUNT(*) FROM utilizador";
+        try (Connection conn = testConnection();
+             PreparedStatement pstmt = conn.prepareStatement(SQL)) {
+            ResultSet rs = pstmt.executeQuery();
+            rs.last();//Vai para o último registo
+            int registos = rs.getRow();
+            if (registos == 0) {
+                return false;
+            } else
+                return true;
+
+        } catch (SQLException ex) {
+            System.out.println(ex.getMessage());
+        }
+        return false;
+    }
+    /* Função que vai devolver true se for logado com sucesso e false caso contrário */
+    /* Esta função está um bocado javarda */
+    public boolean verificaLogin(String username,String password){
+        String SQL = "SELECT username,password FROM utilizador WHERE username = ? AND password = ?";
+        try (Connection conn = testConnection();
+             PreparedStatement pstmt = conn.prepareStatement(SQL)) {
+            pstmt.setString(1, username);
+            pstmt.setString(2, username);
+            ResultSet rs = pstmt.executeQuery();
+            rs.last();//Vai para o último registo
+            int registos = rs.getRow();
+            if (registos == 0) {
+                return false;
+            } else
+                return true;
+
+        } catch (SQLException ex) {
+            System.out.println(ex.getMessage());
+        }
+        return false;
+    }
+    /* Função que recebe um username e devolve o tipo de permissoes do utilizador */
+    public String tipoUser(String username) {
+        String SQL = "SELECT tipo FROM utilizador WHERE username = ?";
+        try (Connection conn = testConnection();
+             PreparedStatement pstmt = conn.prepareStatement(SQL)) {
+            pstmt.setString(1, username);
+            ResultSet rs = pstmt.executeQuery();
+            return rs.getString("tipo");
+
+
+        } catch (SQLException ex) {
+            System.out.println(ex.getMessage());
+        }
+        return null;
+    }
+    /* Função que vai devolver true se o user existir na BD e false se não existir */
+    public boolean verificaUser(String username) {
+        String SQL = "SELECT username FROM utilizador WHERE username = ?";
+        try (Connection conn = testConnection();
+             PreparedStatement pstmt = conn.prepareStatement(SQL)) {
+            pstmt.setString(1, username);
+            ResultSet rs = pstmt.executeQuery();
+            rs.last();//Vai para o último registo
+            int registos = rs.getRow();
+            if (registos == 0) {
+                return false;
+            } else
+                return true;
+
+        } catch (SQLException ex) {
+            System.out.println(ex.getMessage());
+        }
+        return false;
+    }
+
+    public void insertUser(User u) {
+        String SQL = "INSERT INTO utilizador(username,password,tipo) "
+                + "VALUES(?,?,?)";
+
+        try (Connection conn = testConnection();
+             PreparedStatement pstmt = conn.prepareStatement(SQL)) {
+
+            pstmt.setString(1, u.getUsername());
+            pstmt.setString(2, u.getPassword());
+            pstmt.setString(3, u.getUsertype());
+            pstmt.executeUpdate();
+        } catch (SQLException ex) {
+            System.out.println(ex.getMessage());
+        }
+    }
+    /* Função que vai receber um utilizador, vai à BD e altera o seu tipo */
+    void updatePermissoes(String user,String novoTipo){
+        String SQL = "INSERT INTO utilizador(username,password,tipo) "
+                + "VALUES(?,?,?)";
+
+        try (Connection conn = testConnection();
+             PreparedStatement pstmt = conn.prepareStatement(SQL)) {
+
+            pstmt.setString(1, u.getUsername());
+            pstmt.setString(2, u.getPassword());
+            pstmt.setString(3, u.getUsertype());
+            pstmt.executeUpdate();
+        } catch (SQLException ex) {
+            System.out.println(ex.getMessage());
+        }
+    }
+    // Metodo que vai dar permissoes a outros utilizadores
+    public void make_editor() {
+        int flag = 0;
+        String aux;
+        // Vai verificar se o user em questao tem permissao de admin ou utilizador
+        // Nao tem permissao, enviar mensagem
+        if (tipoUser(mensagem.get("username")).equals("normal")) {
+            try {
+                InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+                aux = ";ID|" + mensagem.get("ID");
+                String mensagem = "acess|denied;msg|Nao tem permissoes" + aux;
+                byte[] buffer = mensagem.getBytes();
+                DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+                socket.send(packet);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        // Se tiver permissoes
+        else{
+            //Ver a que utilizador quer dar permissoes
+            if (verificaUser(mensagem.get("editor_name"))) {//se existir
+                if (tipoUser(mensagem.get("editor_name")).equals("editor") || tipoUser(mensagem.get("editor_name")).equals("admin")) {//se já tem permissoes
+                    try {
+                        InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+                        aux = ";ID|" + mensagem.get("ID");
+                        String mensagem = "msg|O utilizador já tem permissões!" + aux;
+                        byte[] buffer = mensagem.getBytes();
+                        DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+                        socket.send(packet);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                } else {//se ainda não tem permissões
+                    try {
+                        updatePermissoes(mensagem.get("editor_name"),"editor");//altera as permissoes
+                        aux = "editor_made|" + mensagem.get("editor_name") + ";ID|" + mensagem.get("ID");
+                        ;
+                        InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+                        String mensagem = "msg|Permissoes atualizadas!;" + aux;
+                        byte[] buffer = mensagem.getBytes();
+                        DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+                        socket.send(packet);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+            }//se não encontrou o nome
+            else{
+                try {
+                    aux = ";ID|" + mensagem.get("ID");
+                    InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+                    String mensagem = "msg|O utilizador não existe!" + aux;
+                    byte[] buffer = mensagem.getBytes();
+                    DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+                    socket.send(packet);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
     // É possível a cada utilizador dar upload de uma música que ficará associado a uma música específica
     // Inicialmente fica restrita à conta do próprio utilizador
-    public void upload_music(){
+    public void upload_music() {
         // Verificar se a música já existe
         // Se já existir
         String aux;
-        if (verifica_musica(mensagem.get("musica_name")) == true){
+        if (verifica_musica(mensagem.get("musica_name")) == true) {
             // Vai ter de enviar o IP da máquina e a porta
             try {
                 InetAddress localhost = InetAddress.getLocalHost();
-                String filename=mensagem.get("musica_name");
+                String filename = mensagem.get("musica_name");
                 InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
                 aux = ";ID|" + mensagem.get("ID");
-                String mensagem = "type|tcp_info;ip_server|" +localhost.getHostAddress()+";port_server|"+Integer.toString(TCPPort)+ aux;
+                String mensagem = "type|tcp_info;ip_server|" + localhost.getHostAddress() + ";port_server|" + Integer.toString(TCPPort) + aux;
                 byte[] buffer = mensagem.getBytes();
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
                 socket.send(packet);
                 // Criar a thread para tratar da ligação
                 ConnectionTCP c;
-                c= new ConnectionTCP(socketTCP,filename);
+                c = new ConnectionTCP(socketTCP, filename);
                 c.start();
 
             } catch (IOException e) {
@@ -852,7 +1021,7 @@ class Worker extends Thread {
             }
         }
         // Se não existir, enviar mensagem a dizer para o utilizador criar a música
-        else{
+        else {
             try {
                 InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
                 aux = ";ID|" + mensagem.get("ID");
@@ -867,15 +1036,16 @@ class Worker extends Thread {
 
 
     }
+
     // Função que vai receber as notificações e as vai adicionar ao array de notificações
-    public void receber_notificacoes(){
-        Notificacao n = new Notificacao(mensagem.get("notification"),mensagem.get("username"));
+    public void receber_notificacoes() {
+        Notificacao n = new Notificacao(mensagem.get("notification"), mensagem.get("username"));
         notificacoes.add(n);
         //Mandar mensagem para facilitar o RMI server
-        try{
-            String aux="";
+        try {
+            String aux = "";
             InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-            aux="type|warning;msg|Notificação adicionada!;ID|"+mensagem.get("ID");
+            aux = "type|warning;msg|Notificação adicionada!;ID|" + mensagem.get("ID");
             byte[] buffer = aux.getBytes();
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
             socket.send(packet);
@@ -909,7 +1079,7 @@ class Worker extends Thread {
         for (Critica c : criticas) {
             acum += c.getAvaliacao();
         }
-        return (double)(acum / criticas.size());
+        return (double) (acum / criticas.size());
 
     }
 
@@ -1128,25 +1298,25 @@ class Worker extends Thread {
                 d = new Data(Integer.parseInt(as[0]), Integer.parseInt(as[1]), Integer.parseInt(as[2]));
                 a.setData_lancamento(d);
                 a.setDescricao(mensagem.get("album_descricao"));
-                if(!a.getPessoas_descricoes().contains(mensagem.get("username"))) {
+                if (!a.getPessoas_descricoes().contains(mensagem.get("username"))) {
                     a.getPessoas_descricoes().add(mensagem.get("username"));
                 }
-                try{
-                    String aux="type|warning"+";ID|" + mensagem.get("ID")+";notification|Detalhes do album "+mensagem.get("album_name")+ " alterado";
-                    String aux2=";user_count|";
-                    int counter=0;
+                try {
+                    String aux = "type|warning" + ";ID|" + mensagem.get("ID") + ";notification|Detalhes do album " + mensagem.get("album_name") + " alterado";
+                    String aux2 = ";user_count|";
+                    int counter = 0;
                     InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                    ArrayList<String> pessoas=a.getPessoas_descricoes();
-                    aux2+=Integer.toString(pessoas.size());
-                    for(String s:pessoas){
+                    ArrayList<String> pessoas = a.getPessoas_descricoes();
+                    aux2 += Integer.toString(pessoas.size());
+                    for (String s : pessoas) {
                         aux2 += ";user_" + Integer.toString(counter) + "_name|" + s;
                         counter++;
                     }
-                    aux+=aux2;
+                    aux += aux2;
                     byte[] buffer = aux.getBytes();
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
                     socket.send(packet);
-                }catch (IOException e) {
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
                 break;//pode nao estar bem
@@ -1215,15 +1385,7 @@ class Worker extends Thread {
         }
     }
 
-    /* Função que recebe um username e devolve o tipo de permissoes do utilizador */
-    public String tipoUser(String utilizador) {
-        for (User u : users) {
-            if (u.getUsername().equals(utilizador)) {
-                return u.getUsertype();
-            }
-        }
-        return null;
-    }
+
     /*
     public void inserir_album() {
         // Vai verificar se o album já existe na base de dados
@@ -1561,72 +1723,7 @@ class Worker extends Thread {
         }
     }
 
-    //Metodo que vai dar permissoes a outros utilizadores
-    public void make_editor() {
-        int flag=0;
-        String aux;
-        // Vai verificar se o user em questao tem permissao de admin ou utilizador
-        // Nao tem permissao, enviar mensagem
-        if (tipoUser(mensagem.get("username")).equals("normal")) {
-            try {
-                InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                aux = ";ID|" + mensagem.get("ID");
-                String mensagem = "acess|denied;msg|Nao tem permissoes" + aux;
-                byte[] buffer = mensagem.getBytes();
-                DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
-                socket.send(packet);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        if (tipoUser(mensagem.get("username")).equals("admin") || tipoUser(mensagem.get("username")).equals("editor")) {
-            //Ver a que utilizador quer dar permissoes
-            for (User u : users) {
-                if (u.getUsername().equals(mensagem.get("editor_name"))) {//se encontrou o nome
-                    flag=1;
-                    if (u.getUsertype().equals("editor") || u.getUsertype().equals("admin")) {//se já tem permissoes
-                        try {
-                            InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                            aux = ";ID|" + mensagem.get("ID");
-                            String mensagem = "msg|O utilizador já tem permissões!" + aux;
-                            byte[] buffer = mensagem.getBytes();
-                            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
-                            socket.send(packet);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    } else {//se ainda não tem permissões
-                        try {
-                            u.setUsertype("editor");//altera as permissoes
-                            aux = "editor_made|" + mensagem.get("editor_name") + ";ID|" + mensagem.get("ID");
-                            ;
-                            InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                            String mensagem = "msg|Permissoes atualizadas!;" + aux;
-                            byte[] buffer = mensagem.getBytes();
-                            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
-                            socket.send(packet);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
 
-                }
-            }
-            //se não encontrou o nome
-            if(flag==0) {
-                try {
-                    aux = ";ID|" + mensagem.get("ID");
-                    InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                    String mensagem = "msg|O utilizador não existe!" + aux;
-                    byte[] buffer = mensagem.getBytes();
-                    DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
-                    socket.send(packet);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
 
     void criticar_album2() {
         //Vai receber o album que o utilizador quer criticar, a sua mensagem e a cotacao
@@ -1640,7 +1737,8 @@ class Worker extends Thread {
             }
         }
         try {
-            String aux = "type|warning;msg|Critica escrita com sucesso!"+";ID|" + mensagem.get("ID");;
+            String aux = "type|warning;msg|Critica escrita com sucesso!" + ";ID|" + mensagem.get("ID");
+            ;
             InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
             byte[] buffer = aux.getBytes();
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
@@ -1669,22 +1767,23 @@ class Worker extends Thread {
 }
 
 /* Thread que envia o seu id de x em x tempo para o RMI server */
-class Helper extends Thread{
+class Helper extends Thread {
     private String MULTICAST_ADDRESS = "224.0.224.0";
     private int PORT = 4322;
     private MulticastSocket socket;
     private int server_id;
 
     // Tem de receber o id do servidor
-    Helper(int server_id,MulticastSocket socket){
-        this.server_id=server_id;
-        this.socket=socket;
+    Helper(int server_id, MulticastSocket socket) {
+        this.server_id = server_id;
+        this.socket = socket;
     }
-    public void run(){
-        while(true) {
+
+    public void run() {
+        while (true) {
             try {
                 InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-                String mensagem = "type|id_warning;idserver|"+Integer.toString(server_id);
+                String mensagem = "type|id_warning;idserver|" + Integer.toString(server_id);
                 byte[] buffer = mensagem.getBytes();
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
                 socket.send(packet);

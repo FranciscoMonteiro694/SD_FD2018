@@ -8,6 +8,7 @@ public class Musico extends Artista{
 
 
     Musico(String nome, Data data_nasc, String descricao, String genero) {
+
         super(nome, data_nasc, descricao, genero);
     }
 
