@@ -2,30 +2,19 @@ import java.io.Serializable;
 
 public class Musica implements Serializable {
     private String nome;
-    private String autor;
     private String compositor;
     private Data data_lancamento;
     private String descricao;
-    private String album;
 
-    Musica(String nome,Data data_lancamento,String compositor,String autor,String descricao,String album){
+    Musica(String nome,Data data_lancamento,String compositor,String descricao){
         this.nome=nome;
         this.data_lancamento=data_lancamento;
         this.compositor=compositor;
-        this.autor=autor;
         this.descricao=descricao;
-        this.album=album;
 
 
     }
 
-    public String getAlbum() {
-        return album;
-    }
-
-    public void setAlbum(String album) {
-        this.album = album;
-    }
 
     public String getNome() {
         return nome;
@@ -35,13 +24,6 @@ public class Musica implements Serializable {
         this.nome = nome;
     }
 
-    public String getAutor() {
-        return autor;
-    }
-
-    public void setAutor(String autor) {
-        this.autor = autor;
-    }
 
     public String getCompositor() {
         return compositor;

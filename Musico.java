@@ -8,9 +8,13 @@ public class Musico extends Artista{
 
 
     Musico(String nome, Data data_nasc, String descricao, String genero) {
+
         super(nome, data_nasc, descricao, genero);
     }
-
+    Musico(String nome, String genero, String descricao, Data data_criacao , Data dataNascimento){
+        super(nome, data_criacao, descricao, genero);
+        this.dataNascimento=dataNascimento;
+    }
 
     public Musico(String nome, Data data_criacao, String descricao, String genero, Data dataNascimento) {
         super(nome, data_criacao, descricao, genero);
